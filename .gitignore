@@ -20,7 +20,6 @@ dataset/**/*.png
 # Large training artifacts. python/models/freshiq_model.tflite is deliberately
 # NOT ignored - a clone must be able to run on the board without a second
 # download, and it is only ~2.6 MB.
-*.keras
 *.h5
 
 # OS junk
@@ -42,3 +41,8 @@ python/models/freshiq_model_float.tflite
 # Importable app bundle - regenerate with ./make_app_bundle.sh
 build/
 FreshIQ_app.zip
+
+# The trainable model IS tracked. It cannot be regenerated without
+# retraining, and make_app_bundle.sh already excludes it from what ships
+# to the board, so tracking it costs the device nothing.
+!python/models/freshiq_model.keras

@@ -35,6 +35,42 @@ class CameraError(RuntimeError):
     pass
 
 
+
+def _open_failure_hint(index) -> str:
+    """
+    Say WHICH failure this is.
+
+    "Could not open camera" covers two different faults in one sentence, and
+    they need opposite fixes: no camera attached, versus a camera that is
+    attached and working but already claimed by another process. The second is
+    the common one on this rig - an earlier instance of the app still holding
+    /dev/video0 - and calling that "no camera found" sends you off to check the
+    USB cable on a camera that is perfectly fine.
+    """
+    import glob
+    nodes = sorted(glob.glob("/dev/video*"))
+
+    if not nodes:
+        return (
+            "No camera found: there are no /dev/video* devices at all, so the "
+            "system cannot see a camera."
+            "\n  Plug the USB camera in, then check:  ls -l /dev/video*"
+        )
+
+    return (
+        "Camera {index!r} could not be opened, but {nodes} {verb} present - a "
+        "camera IS attached, so this is almost certainly not a hardware fault."
+        "\n  Most likely another process already holds the device, usually an "
+        "earlier instance of FreshIQ that was never stopped."
+        "\n  Find the holder:   sudo fuser -v {first}"
+        "\n  Stop a stale app:  arduino-app-cli app stop ~/ArduinoApps/FreshIQ"
+        "\n  A UVC camera often exposes two nodes (video0 = frames, video1 = "
+        "metadata only); if index 0 refuses, try the next one in "
+        "python/config/freshiq.json."
+    ).format(index=index, nodes=", ".join(nodes),
+             verb="is" if len(nodes) == 1 else "are", first=nodes[0])
+
+
 class Camera:
     def __init__(self, index: int = 0, width: int = 1280, height: int = 720,
                  warmup_frames: int = 5, backend: Optional[int] = None):
@@ -95,10 +131,7 @@ class Camera:
                     break
 
         if not self.cap or not self.cap.isOpened():
-            raise CameraError(
-                f"Could not open camera {self.index!r}. "
-                "Check the USB connection and that no other program is using it. "
-                "List what the board can see with:  ls -l /dev/video*  and  v4l2-ctl --list-devices")
+            raise CameraError(_open_failure_hint(self.index))
         # Opening is NOT proof of anything. isOpened() only says the device
         # node was claimed; whether the camera will actually deliver frames in
         # the requested mode is a separate question, and _prepare() answers it.

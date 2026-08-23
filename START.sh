@@ -118,11 +118,50 @@ fi
 # Go
 # --------------------------------------------------------------------------
 CONFIG="python/config/freshiq.json"
+PYTHON_ONLY=0
 for a in "$@"; do
   case "$a" in
-    --dev|--development) CONFIG="python/config/freshiq.development.json" ;;
+    --dev|--development) CONFIG="python/config/freshiq.development.json"; PYTHON_ONLY=1 ;;
+    --python-only)       PYTHON_ONLY=1 ;;
   esac
 done
+
+# --------------------------------------------------------------------------
+# On an UNO Q, hand over to App Lab.
+#
+# THIS SCRIPT ONLY EVER STARTED THE LINUX HALF. The tray needs the OTHER half -
+# sketch/sketch.ino running on the onboard MCU - and only App Lab deploys that.
+# Starting Python alone left the router reachable but nothing answering
+# tray_status, so the dashboard said "Tray control unavailable" and the fault
+# looked like the sketch or the wiring rather than how it was launched.
+#
+# `arduino-app-cli app start` flashes the sketch AND runs python/main.py, so it
+# is the correct single command on this board. Fall through to Python-only when
+# App Lab is not installed (a laptop), or when asked explicitly.
+# --------------------------------------------------------------------------
+APP_DIR="$(pwd)"
+if [ "$PYTHON_ONLY" -eq 0 ] && command -v arduino-app-cli >/dev/null 2>&1    && [ -f app.yaml ] && [ -f sketch/sketch.ino ]; then
+  echo "${B}Arduino UNO Q detected - starting BOTH halves through App Lab${O}"
+  echo "  sketch -> onboard MCU, python -> Linux side"
+  echo "  (use ./START.sh --python-only to skip the MCU)"
+  echo
+
+  # A previous instance holds /dev/video0 and the router session. Leaving it
+  # running is what produces "no camera found" on a camera that works.
+  arduino-app-cli app stop "$APP_DIR" >/dev/null 2>&1 || true
+
+  IP=$(hostname -I 2>/dev/null | awk '{print $1}')
+  [ -n "${IP:-}" ] && echo "  open  ${B}http://$IP:8000${O}  once it is up"
+  echo
+  exec arduino-app-cli app start "$APP_DIR"
+fi
+
+if [ "$PYTHON_ONLY" -eq 0 ]; then
+  echo "${Y}note${O}  App Lab (arduino-app-cli) not found, so only the Linux half"
+  echo "      will run. The tray needs sketch/sketch.ino on the MCU; without it"
+  echo "      the dashboard reports 'Tray control unavailable'."
+  echo
+fi
 
 IP=$(hostname -I 2>/dev/null | awk '{print $1}')
 echo "${B}Starting FreshIQ${O}"
