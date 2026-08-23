@@ -66,7 +66,51 @@ except Exception as _exc:                                       # noqa: BLE001
     SCAN_AVAILABLE = False
     SCAN_IMPORT_ERROR = "{}: {}".format(type(_exc).__name__, _exc)
 
-DASHBOARD = os.path.join(os.path.dirname(__file__), "dashboard.html")
+# The dashboard is a plain file that ships next to this one. It is looked up
+# rather than assumed because a deployment can relocate or partially copy the
+# tree - App Lab installs into ~/ArduinoApps/<name>/ - and a 500 that says only
+# "dashboard.html is missing" gives you nothing to act on. The search stays
+# short, and every place it tried is reported when it fails.
+_DASHBOARD_CANDIDATES = (
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "dashboard.html"),
+    os.path.join(REPO, "backend", "dashboard.html"),
+    os.path.join(REPO, "dashboard.html"),
+    os.path.abspath("dashboard.html"),
+)
+
+
+def find_dashboard():
+    """Return the first dashboard.html that exists, or None."""
+    for candidate in _DASHBOARD_CANDIDATES:
+        if os.path.isfile(candidate):
+            return candidate
+    return None
+
+
+def dashboard_missing_report() -> str:
+    """Say where it looked and what is actually there instead."""
+    lines = ["dashboard.html is missing.", "", "Looked in:"]
+    lines += ["  " + c for c in _DASHBOARD_CANDIDATES]
+
+    here = os.path.dirname(os.path.abspath(__file__))
+    lines += ["", "What is actually in " + here + ":"]
+    try:
+        names = sorted(os.listdir(here))
+    except OSError as exc:
+        lines.append("  cannot list it: " + str(exc))
+    else:
+        lines += ["  " + n for n in names] if names else ["  (empty)"]
+
+    lines += [
+        "",
+        "This file ships in python/backend/ and is part of the app bundle. If",
+        "it is not here, the copy on this device is incomplete - re-import the",
+        "whole app folder rather than copying individual .py files across.",
+    ]
+    return "\n".join(lines)
+
+
+DASHBOARD = _DASHBOARD_CANDIDATES[0]
 DATA_DIR = os.path.join(REPO, "data")
 HISTORY_FILE = os.path.join(DATA_DIR, "inspections.jsonl")
 
@@ -332,11 +376,13 @@ class Handler(BaseHTTPRequestHandler):
         path, query = route.path, parse_qs(route.query)
 
         if path in ("/", "/index.html"):
-            try:
-                with open(DASHBOARD, "rb") as fh:
+            found = find_dashboard()
+            if found is None:
+                self._bytes(500, dashboard_missing_report().encode("utf-8"),
+                            "text/plain; charset=utf-8")
+            else:
+                with open(found, "rb") as fh:
                     self._bytes(200, fh.read(), "text/html; charset=utf-8")
-            except FileNotFoundError:
-                self._bytes(500, b"dashboard.html is missing", "text/plain")
 
         elif path == "/api/health":
             backend = model_module.build_backend(get_config())
@@ -972,6 +1018,17 @@ def main():
     elif args.no_tray:
         Handler.scan_error = "--no-tray was passed"
         print("[tray]   disabled by --no-tray")
+
+    # Say this at boot, not at the first page load. The server is otherwise
+    # perfectly healthy without the file - the API keeps answering - so the
+    # fault surfaces later as a blank browser tab, long after the log that
+    # would have explained it has scrolled past.
+    if find_dashboard() is None:
+        print()
+        for line in dashboard_missing_report().splitlines():
+            print(("[web]    " + line) if line else "[web]")
+        print("[web]    The API still works; only the page is unavailable.")
+        print()
 
     srv = ThreadingHTTPServer((host, port), Handler)
     print(f"\n  FreshIQ dashboard -> http://localhost:{port}")

@@ -43,6 +43,7 @@ chmod +x "$OUT"/*.sh 2>/dev/null || true
 test -f "$OUT/python/models/freshiq_model.tflite" || { echo "FATAL: model missing"; exit 1; }
 test -f "$OUT/python/models/labels.json"          || { echo "FATAL: labels missing"; exit 1; }
 test -f "$OUT/app.yaml"                            || { echo "FATAL: app.yaml missing"; exit 1; }
+test -f "$OUT/python/backend/dashboard.html" || { echo "FATAL: dashboard.html missing"; exit 1; }
 test -f "$OUT/sketch/sketch.ino"                   || { echo "FATAL: sketch missing"; exit 1; }
 
 if command -v zip >/dev/null 2>&1; then
