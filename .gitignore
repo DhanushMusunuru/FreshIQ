@@ -27,3 +27,14 @@ dataset/**/*.png
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Rendered explainer clips and the packed print bundle live on disk but do not
+# belong in the repo - they are build outputs, and the demo video is submitted
+# as a link rather than a file.
+cad/video/
+cad/*.zip
+
+# The float export is not what the device loads - config points at
+# freshiq_model.tflite. Shipping both invites deploying the wrong one, which
+# fails silently rather than loudly. It stays on disk, out of the repo.
+python/models/freshiq_model_float.tflite
