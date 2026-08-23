@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FreshIQ — Inspection Station</title>
+<style>
+  :root{
+    --bg:#0B0F0D; --panel:#121815; --panel2:#1A221E; --panel3:#222C27;
+    --line:#26322C; --line2:#33423A;
+    /* ink3 is used for small uppercase mono labels and .note text, so it has to
+       clear 4.5:1 against --bg, not just look subtle. */
+    --ink:#E9F1EC; --ink2:#A8BBB0; --ink3:#84998D;
+    --fresh:#4ED47F; --spoiled:#F0813F; --warn:#E5C04A; --accent:#3FD0C9; --idle:#31423B;
+    /* Text drawn ON the accent. Cannot be var(--bg): that flips with the theme
+       and gives near-white on mid-teal in light mode (1.76:1, unreadable). */
+    --on-accent:#04211F;
+    --mono:ui-monospace,"Cascadia Mono","SF Mono",Menlo,Consolas,monospace;
+    --sans:ui-sans-serif,-apple-system,"Segoe UI",Roboto,Inter,sans-serif;
+    --r:10px;
+  }
+  @media (prefers-color-scheme:light){
+    :root{
+      --bg:#F4F7F5; --panel:#FFFFFF; --panel2:#EDF2EF; --panel3:#E2EAE5;
+      --line:#D8E2DC; --line2:#C3D1C9;
+      --ink:#0E1512; --ink2:#41534A; --ink3:#5C6E64;
+      --fresh:#1E8C4C; --spoiled:#C2591C; --warn:#96790F; --accent:#0A6B66; --idle:#D3DED8;
+      --on-accent:#FFFFFF;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+       font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1240px;margin:0 auto;padding:20px 18px 72px}
+
+  /* ---------- header ---------- */
+  header{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;
+         padding:4px 0 16px;margin-bottom:18px;border-bottom:1px solid var(--line)}
+  .brand{display:flex;align-items:baseline;gap:10px}
+  .brand h1{font-size:1.2rem;font-weight:750;letter-spacing:-.025em;margin:0}
+  .brand h1 span{color:var(--accent)}
+  .brand .sub{font-family:var(--mono);font-size:.64rem;letter-spacing:.16em;
+              text-transform:uppercase;color:var(--ink3)}
+  .status{display:flex;gap:16px;flex-wrap:wrap;font-family:var(--mono);font-size:.68rem;
+          letter-spacing:.04em;color:var(--ink3)}
+  .status b{color:var(--ink2);font-weight:600}
+  .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--ink3);
+       margin-right:6px;vertical-align:middle}
+  .dot.on{background:var(--fresh);box-shadow:0 0 0 3px color-mix(in srgb,var(--fresh) 22%,transparent)}
+  .dot.warn{background:var(--warn)}
+
+  /* ---------- network band ---------- */
+  .net{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+       padding:14px 16px 10px;margin-bottom:16px;overflow:hidden}
+  .net .hd{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;
+           margin-bottom:6px}
+  .net .hd .t{font-family:var(--mono);font-size:.62rem;letter-spacing:.16em;
+              text-transform:uppercase;color:var(--ink3)}
+  .net .hd .m{font-family:var(--mono);font-size:.66rem;color:var(--ink3)}
+  .net .hd .m b{color:var(--accent)}
+  .netscroll{overflow-x:auto;overflow-y:hidden}
+  #netsvg{display:block;min-width:760px;width:100%;height:auto}
+  .stg rect{fill:var(--idle);stroke:var(--line2);stroke-width:1;
+            transition:fill .25s ease, stroke .25s ease}
+  .stg.lit rect{fill:var(--accent);stroke:var(--accent)}
+  .stg text{fill:var(--ink3);font-family:var(--mono);font-size:7px;letter-spacing:.04em}
+  .stg.lit text{fill:var(--ink2)}
+  .wire{stroke:var(--line2);stroke-width:1.2;fill:none;transition:stroke .25s}
+  .wire.lit{stroke:var(--accent)}
+  .head circle{fill:var(--idle);stroke:var(--line2);stroke-width:1.5;transition:all .3s}
+  .head.lit circle{stroke-width:2}
+  .head text{font-family:var(--mono);font-size:8px;fill:var(--ink3)}
+  .head.lit text{fill:var(--ink)}
+  @media (prefers-reduced-motion:reduce){
+    .stg rect,.wire,.head circle,.head text{transition:none}
+  }
+
+  /* ---------- layout ---------- */
+  .grid{display:grid;grid-template-columns:minmax(0,1.02fr) minmax(0,1fr);gap:16px}
+  /* Grid items default to min-width:auto, so a card refuses to shrink below the
+     min-content width of its controls and pushes the whole page wide on a phone.
+     This is the fix - not overflow-x:hidden on the body, which only hides it. */
+  .grid > *{min-width:0}
+  @media (max-width:900px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+  .card h2{font-family:var(--mono);font-size:.64rem;letter-spacing:.16em;text-transform:uppercase;
+           color:var(--ink3);margin:0 0 12px;font-weight:600}
+  .full{grid-column:1/-1}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+
+  /* ---------- camera ---------- */
+  #preview,#devVideo{width:100%;aspect-ratio:4/3;object-fit:cover;background:var(--panel2);
+      border-radius:8px;border:1px solid var(--line);display:block}
+  #devCanvas{display:none}
+  .seg{display:inline-flex;border:1px solid var(--line2);border-radius:7px;overflow:hidden}
+  .seg button{border:none;border-radius:0;background:transparent;padding:6px 13px;
+      font-family:var(--mono);font-size:.66rem;letter-spacing:.07em;color:var(--ink3);cursor:pointer}
+  .seg button.on{background:var(--accent);color:var(--on-accent);font-weight:700}
+  .seg button:not(.on):hover{color:var(--ink);background:var(--panel2)}
+
+  .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:14px}
+  .controls > div{min-width:7rem}
+  label{display:block;font-family:var(--mono);font-size:.6rem;letter-spacing:.13em;
+        text-transform:uppercase;color:var(--ink3);margin-bottom:5px}
+  select,input[type=file]{width:100%;font-family:var(--sans);font-size:.86rem;padding:8px 10px;
+      border:1px solid var(--line2);border-radius:7px;background:var(--panel2);color:var(--ink)}
+  button{font-family:var(--sans);font-size:.86rem;font-weight:600;padding:9px 15px;
+      border:1px solid var(--line2);border-radius:7px;background:var(--panel2);color:var(--ink);
+      cursor:pointer;transition:background .15s,border-color .15s}
+  button:hover:not(:disabled){border-color:var(--accent)}
+  button:disabled{opacity:.45;cursor:progress}
+  button:focus-visible,select:focus-visible,input:focus-visible{
+      outline:2px solid var(--accent);outline-offset:2px}
+  #run{background:var(--accent);color:var(--on-accent);border-color:var(--accent);flex:1;min-width:150px}
+  #liveBtn.on{border-color:var(--accent);color:var(--accent)}
+
+  /* ---------- verdict ---------- */
+  .verdict{text-align:center;padding:26px 14px 20px;border-radius:8px;background:var(--panel2);
+           border:1px solid var(--line)}
+  .verdict .food{font-family:var(--mono);font-size:.68rem;letter-spacing:.2em;
+                 text-transform:uppercase;color:var(--ink3)}
+  .verdict .cond{font-size:2.7rem;font-weight:800;letter-spacing:-.035em;line-height:1.05;margin:6px 0 4px}
+  .verdict .cond.fresh{color:var(--fresh)}
+  .verdict .cond.spoiled{color:var(--spoiled)}
+  .verdict .cond.none{color:var(--ink3);font-size:1.25rem;font-weight:600}
+  .verdict .sub{font-family:var(--mono);font-size:.72rem;color:var(--ink2)}
+  .bars{display:flex;flex-direction:column;gap:9px;margin-top:16px}
+  .bar .t{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.72rem;
+          margin-bottom:4px}
+  .bar .track{height:8px;background:var(--panel3);border-radius:5px;overflow:hidden}
+  .bar .fill{height:100%;border-radius:5px;transition:width .4s cubic-bezier(.4,0,.2,1)}
+  @media (prefers-reduced-motion:reduce){.bar .fill{transition:none}}
+  ul.evidence{margin:14px 0 0;padding-left:18px;color:var(--ink2);font-size:.86rem}
+  ul.evidence li{margin-bottom:3px}
+
+  /* ---------- data ---------- */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(102px,1fr));gap:10px;margin:14px 0}
+  .stat{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:11px 13px}
+  .stat .k{font-family:var(--mono);font-size:.58rem;letter-spacing:.13em;text-transform:uppercase;
+           color:var(--ink3)}
+  .stat .v{font-family:var(--mono);font-size:1.45rem;line-height:1.25;margin-top:2px}
+  .scroll{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:.81rem}
+  th,td{text-align:left;padding:8px 9px;border-bottom:1px solid var(--line);white-space:nowrap}
+  th{font-family:var(--mono);font-size:.58rem;letter-spacing:.13em;text-transform:uppercase;
+     color:var(--ink3);font-weight:600}
+  tbody tr:hover{background:var(--panel2)}
+  td.mono{font-family:var(--mono);font-size:.75rem;font-variant-numeric:tabular-nums}
+  .pill{display:inline-block;padding:2px 9px;border-radius:99px;font-family:var(--mono);
+        font-size:.66rem;font-weight:700}
+  .pill.fresh{background:color-mix(in srgb,var(--fresh) 18%,transparent);color:var(--fresh)}
+  .pill.spoiled{background:color-mix(in srgb,var(--spoiled) 18%,transparent);color:var(--spoiled)}
+
+  a.btn{text-decoration:none;font-size:.76rem;padding:7px 12px;border:1px solid var(--line2);
+        border-radius:7px;color:var(--ink2);font-family:var(--mono)}
+  a.btn:hover{border-color:var(--accent);color:var(--accent)}
+  .note{font-size:.78rem;color:var(--ink3);line-height:1.55;margin:12px 0 0}
+  .banner{border-radius:8px;padding:10px 13px;font-size:.82rem;margin-bottom:14px;
+          border:1px solid var(--warn);background:color-mix(in srgb,var(--warn) 12%,transparent)}
+  .hidden{display:none !important}
+  code{font-family:var(--mono);font-size:.85em;background:var(--panel2);
+       border:1px solid var(--line);border-radius:4px;padding:.05em .35em}
+  .teachBtns{display:flex;gap:10px;flex-wrap:wrap}
+
+  /* Phones: let every control shrink and wrap rather than setting the page width. */
+  @media (max-width:560px){
+    .wrap{padding:16px 12px 56px}
+    .controls > div{min-width:0;flex:1 1 8rem}
+    .teachBtns{width:100%}
+    .teachBtns button{flex:1 1 9rem}
+    #run{min-width:0;flex:1 1 100%}
+    #liveBtn{flex:1 1 100%}
+    .verdict .cond{font-size:2.1rem}
+    header{gap:8px}
+    .status{font-size:.62rem;gap:10px}
+  }
+  #teachFresh{background:color-mix(in srgb,var(--fresh) 16%,transparent);
+              border-color:var(--fresh);color:var(--fresh)}
+  #teachSpoiled{background:color-mix(in srgb,var(--spoiled) 16%,transparent);
+                border-color:var(--spoiled);color:var(--spoiled)}
+/* ---- tray scan ---- */
+.compgrid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
+.comp{border:1px solid var(--line,#2a2f3a);border-radius:10px;padding:12px;
+      background:rgba(255,255,255,.02);transition:border-color .2s,background .2s}
+.comp.active{border-color:var(--accent,#59d18b);background:rgba(89,209,139,.07)}
+.comp.pending{opacity:.55}
+.comp .cn{font-size:11px;letter-spacing:.09em;text-transform:uppercase;opacity:.6}
+.comp .cfood{font-size:19px;font-weight:650;margin:4px 0 2px}
+.comp .ccond{font-size:13px;font-weight:600}
+.comp .ccond.fresh{color:var(--ok,#59d18b)}
+.comp .ccond.spoiled{color:var(--bad,#e2686d)}
+.comp .ccond.unknown{opacity:.6;font-weight:500}
+.comp .cconf{font-size:12px;opacity:.7;margin-top:3px}
+.comp .cwarn{font-size:12px;color:var(--warn,#e8b552);margin-top:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <h1>Fresh<span>IQ</span></h1>
+      <span class="sub">Inspection Station</span>
+    </div>
+    <div class="status">
+      <span><span class="dot" id="dotSrv"></span><b id="srv">connecting</b></span>
+      <span>model <b id="mBackend">?</b></span>
+      <span>camera <b id="mCam">?</b></span>
+      <span>v<b id="mVer">?</b></span>
+    </div>
+  </header>
+
+  <div class="banner hidden" id="demoBanner">
+    <b>Demo mode</b> — no camera found, so inspections run on the bundled sample photos.
+    Plug a USB camera in and restart, or switch to <b>This device</b>.
+  </div>
+  <div class="banner hidden" id="heurBanner">
+    <b>No trained model loaded</b> — running the rule-based fallback. Put
+    <code>freshiq_model.tflite</code>, <code>labels.json</code> and <code>freshiq_model.keras</code>
+    in <code>models/</code> and restart.
+  </div>
+
+  <div class="banner hidden" id="trayBanner">
+    <b>Tray control unavailable</b> — <span id="trayBannerWhy"></span>
+    Single-shot inspection still works.
+  </div>
+
+  <!-- ===================== tray scan ===================== -->
+  <section class="card full" id="trayCard">
+    <div class="row" style="margin-bottom:10px">
+      <h2 style="margin:0">Tray scan</h2>
+      <span class="note" style="margin:0" id="scanState">idle</span>
+    </div>
+
+    <div class="row" style="gap:10px;margin-bottom:12px;flex-wrap:wrap">
+      <button id="scanStart">Start scan</button>
+      <button id="scanStop" disabled>Stop</button>
+      <span class="note" style="margin:0" id="scanProgress"></span>
+      <span class="note" style="margin:0 0 0 auto" id="trayMeta"></span>
+    </div>
+
+    <div id="compGrid" class="compgrid"></div>
+
+    <p class="note" id="scanNote" style="margin-top:12px">
+      The tray stops before every photo. Percentages are the model's
+      classification confidence, not a food-safety measurement.
+    </p>
+  </section>
+
+  <!-- ===================== network ===================== -->
+  <section class="net">
+    <div class="hd">
+      <span class="t">MobileNetV2 · 160px · two heads (condition + food)</span>
+      <span class="m" id="netMeta">idle</span>
+    </div>
+    <div class="netscroll">
+      <svg id="netsvg" viewBox="0 0 940 120" role="img"
+           aria-label="Diagram of the network: an image passes through ten stages, is pooled, then splits into a condition head and a food head.">
+        <g id="netWires"></g>
+        <g id="netStages"></g>
+        <g id="netHeads"></g>
+      </svg>
+    </div>
+  </section>
+
+  <div class="grid">
+
+    <!-- ===================== camera ===================== -->
+    <section class="card">
+      <div class="row" style="margin-bottom:12px">
+        <h2 style="margin:0">Camera</h2>
+        <div class="seg" role="group" aria-label="Camera source">
+          <button id="modeServer" class="on" aria-pressed="true">Rig camera</button>
+          <button id="modeDevice" aria-pressed="false">This device</button>
+        </div>
+      </div>
+
+      <img id="preview" alt="Live view of the tray">
+      <video id="devVideo" class="hidden" playsinline muted autoplay
+             aria-label="Live view from this device's camera"></video>
+      <canvas id="devCanvas"></canvas>
+
+      <div id="devFallback" class="hidden" style="margin-top:12px">
+        <p class="note" id="devFallbackMsg" style="margin-top:0"></p>
+        <label for="devFile">Take a photo</label>
+        <input id="devFile" type="file" accept="image/*" capture="environment">
+      </div>
+
+      <div class="controls">
+        <div>
+          <label for="food">Food</label>
+          <select id="food"><option value="">Auto-detect</option></select>
+        </div>
+        <div style="max-width:5.5rem">
+          <label for="views">Views</label>
+          <select id="views"><option>1</option><option>2</option>
+            <option selected>4</option><option>6</option></select>
+        </div>
+        <button id="run">Inspect &amp; save</button>
+        <button id="liveBtn">Go live</button>
+      </div>
+      <p class="note" id="hint">
+        <b>Inspect &amp; save</b> rotates the tray, takes the chosen views and records the result.
+        <b>Go live</b> classifies one frame every 2s so you can hold fruit up and watch the verdict
+        react — nothing is stored until you press <b>Keep this one</b>.
+      </p>
+    </section>
+
+    <!-- ===================== result ===================== -->
+    <section class="card">
+      <h2>Result</h2>
+      <div class="verdict">
+        <div class="food" id="rFood">—</div>
+        <div class="cond none" id="rCond">no inspection yet</div>
+        <div class="sub" id="rSub">press Inspect to begin</div>
+        <div class="sub hidden" id="rFix" style="color:var(--warn);margin-top:6px"></div>
+        <button id="keep" class="hidden" style="margin-top:14px">Keep this one</button>
+      </div>
+      <div class="bars" id="rBars"></div>
+      <ul class="evidence" id="rEvidence"></ul>
+    </section>
+
+    <!-- ===================== teach ===================== -->
+    <section class="card full">
+      <div class="row">
+        <h2 style="margin:0">Teach it your setup</h2>
+        <span class="note" style="margin:0" id="teachCount">no examples yet</span>
+      </div>
+      <p class="note">
+        The model learned from web photos of supermarket produce. Your camera, lighting and
+        background are different, which is why it does worse here than its test score suggests.
+        <b>Hold something up, say what it really is, press a button.</b> A few hundred of these and
+        you can fine-tune on your actual setup — that closes the gap far better than more web
+        photos ever will.
+      </p>
+      <div class="controls">
+        <div><label for="teachFood">What is it?</label><select id="teachFood"></select></div>
+        <div class="teachBtns" style="min-width:auto">
+          <button id="teachFresh">This is FRESH</button>
+          <button id="teachSpoiled">This is SPOILED</button>
+        </div>
+      </div>
+      <p class="note" id="teachMsg"></p>
+    </section>
+
+    <!-- ===================== history ===================== -->
+    <section class="card full">
+      <div class="row">
+        <h2 style="margin:0">History</h2>
+        <a class="btn" href="/api/export.csv" download>Export CSV</a>
+      </div>
+      <div class="stats" id="stats"></div>
+      <div class="scroll">
+        <table>
+          <thead><tr>
+            <th>Time</th><th>Food</th><th>Condition</th><th>Fresh</th><th>Spoiled</th>
+            <th>Quality</th><th>Views</th><th>ms</th>
+          </tr></thead>
+          <tbody id="hist"><tr><td colspan="8" style="color:var(--ink3)">nothing yet</td></tr></tbody>
+        </table>
+      </div>
+      <p class="note" id="disclaimer"></p>
+    </section>
+
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let busy = false;
+let mode = "rig";
+let devStream = null;
+let thresholds = null;
+
+async function jget(url){
+  const r = await fetch(url,{cache:"no-store"});
+  if(!r.ok) throw new Error(url+" -> "+r.status);
+  return r.json();
+}
+
+/* ============================================================
+   NETWORK DIAGRAM
+   Real shapes from the trained model: MobileNetV2 alpha=0.35 at
+   160px. Spatial size halves five times (160->5); channels grow.
+   Block height encodes spatial size, width encodes channels, so
+   the shape of the diagram IS the architecture's trade-off.
+   ============================================================ */
+const STAGES = [
+  {l:"input",  s:160, c:3},
+  {l:"conv1",  s:80,  c:16},
+  {l:"blk1",   s:80,  c:8},
+  {l:"blk2",   s:40,  c:8},
+  {l:"blk3",   s:20,  c:16},
+  {l:"blk4",   s:10,  c:24},
+  {l:"blk5",   s:10,  c:32},
+  {l:"blk6",   s:5,   c:56},
+  {l:"blk7",   s:5,   c:112},
+  {l:"1x1",    s:5,   c:1280},
+];
+const NET = {x0:14, y:60, gap:9, maxH:74};
+
+function buildNet(){
+  const wires=$("netWires"), stages=$("netStages"), heads=$("netHeads");
+  wires.innerHTML=stages.innerHTML=heads.innerHTML="";
+  const NS="http://www.w3.org/2000/svg";
+  let x = NET.x0;
+  const centres=[];
+
+  STAGES.forEach((st,i)=>{
+    const h = Math.max(10, NET.maxH * (Math.log2(st.s)+1)/8);
+    const w = Math.max(9, 7 + 15*Math.log10(st.c+1));
+    const g = document.createElementNS(NS,"g");
+    g.setAttribute("class","stg"); g.id="stg"+i;
+    const r = document.createElementNS(NS,"rect");
+    r.setAttribute("x",x); r.setAttribute("y",NET.y-h/2);
+    r.setAttribute("width",w); r.setAttribute("height",h);
+    r.setAttribute("rx",2.5);
+    g.appendChild(r);
+    const t1=document.createElementNS(NS,"text");
+    t1.setAttribute("x",x+w/2); t1.setAttribute("y",NET.y+NET.maxH/2+12);
+    t1.setAttribute("text-anchor","middle"); t1.textContent=st.l;
+    g.appendChild(t1);
+    const t2=document.createElementNS(NS,"text");
+    t2.setAttribute("x",x+w/2); t2.setAttribute("y",NET.y+NET.maxH/2+21);
+    t2.setAttribute("text-anchor","middle");
+    t2.setAttribute("opacity",".72");
+    t2.textContent = st.s+"²×"+st.c;
+    g.appendChild(t2);
+    const tip=document.createElementNS(NS,"title");
+    tip.textContent = `${st.l}: ${st.s}×${st.s} grid, ${st.c} channels`;
+    g.appendChild(tip);
+    stages.appendChild(g);
+    centres.push({x:x+w, w});
+    x += w + NET.gap;
+  });
+
+  // straight wires between stages
+  for(let i=0;i<centres.length-1;i++){
+    const p=document.createElementNS(NS,"path");
+    p.setAttribute("class","wire"); p.id="wire"+i;
+    p.setAttribute("d",`M${centres[i].x} ${NET.y} H${centres[i].x+NET.gap}`);
+    wires.appendChild(p);
+  }
+
+  // pooling node then the split into two heads
+  const px = x + 6;
+  const pool=document.createElementNS(NS,"g");
+  pool.setAttribute("class","stg"); pool.id="stgPool";
+  const pr=document.createElementNS(NS,"rect");
+  pr.setAttribute("x",px); pr.setAttribute("y",NET.y-9);
+  pr.setAttribute("width",13); pr.setAttribute("height",18); pr.setAttribute("rx",2.5);
+  pool.appendChild(pr);
+  const pt=document.createElementNS(NS,"text");
+  pt.setAttribute("x",px+6.5); pt.setAttribute("y",NET.y+NET.maxH/2+12);
+  pt.setAttribute("text-anchor","middle"); pt.textContent="pool";
+  pool.appendChild(pt);
+  const pt2=document.createElementNS(NS,"text");
+  pt2.setAttribute("x",px+6.5); pt2.setAttribute("y",NET.y+NET.maxH/2+21);
+  pt2.setAttribute("text-anchor","middle"); pt2.setAttribute("opacity",".72");
+  pt2.textContent="1280";
+  pool.appendChild(pt2);
+  stages.appendChild(pool);
+
+  const wp=document.createElementNS(NS,"path");
+  wp.setAttribute("class","wire"); wp.id="wirePool";
+  wp.setAttribute("d",`M${centres[centres.length-1].x} ${NET.y} H${px}`);
+  wires.appendChild(wp);
+
+  const hx = px + 78;
+  [["condition",-24,"hCond"],["food",24,"hFood"]].forEach(([lbl,dy,id])=>{
+    const w=document.createElementNS(NS,"path");
+    w.setAttribute("class","wire"); w.id=id+"Wire";
+    w.setAttribute("d",`M${px+13} ${NET.y} C${px+45} ${NET.y}, ${hx-34} ${NET.y+dy}, ${hx-15} ${NET.y+dy}`);
+    wires.appendChild(w);
+
+    const g=document.createElementNS(NS,"g");
+    g.setAttribute("class","head"); g.id=id;
+    const c=document.createElementNS(NS,"circle");
+    c.setAttribute("cx",hx); c.setAttribute("cy",NET.y+dy); c.setAttribute("r",11);
+    g.appendChild(c);
+    const t=document.createElementNS(NS,"text");
+    t.setAttribute("x",hx+18); t.setAttribute("y",NET.y+dy+3); t.textContent=lbl;
+    g.appendChild(t);
+    const v=document.createElementNS(NS,"text");
+    v.setAttribute("x",hx); v.setAttribute("y",NET.y+dy+3);
+    v.setAttribute("text-anchor","middle"); v.setAttribute("font-size","7");
+    v.id=id+"Val"; v.textContent="";
+    g.appendChild(v);
+    heads.appendChild(g);
+  });
+}
+
+let pulseTimers=[];
+function netReset(){
+  pulseTimers.forEach(clearTimeout); pulseTimers=[];
+  document.querySelectorAll(".stg,.wire,.head").forEach(e=>e.classList.remove("lit"));
+  ["hCondVal","hFoodVal"].forEach(id=>{const e=$(id); if(e) e.textContent="";});
+  document.querySelectorAll(".head circle").forEach(c=>c.style.fill="");
+}
+function netPulse(){
+  netReset();
+  $("netMeta").innerHTML = 'running';
+  const seq=[...STAGES.map((_,i)=>"stg"+i),"stgPool"];
+  seq.forEach((id,i)=>{
+    pulseTimers.push(setTimeout(()=>{
+      $(id)?.classList.add("lit");
+      $("wire"+(i-1))?.classList.add("lit");
+      if(id==="stgPool") $("wirePool")?.classList.add("lit");
+    }, i*55));
+  });
+}
+function netResult(res){
+  const t = STAGES.length*55 + 90;
+  pulseTimers.push(setTimeout(()=>{
+    ["hCond","hFood"].forEach(id=>{
+      $(id)?.classList.add("lit");
+      $(id+"Wire")?.classList.add("lit");
+    });
+    const cond=res.condition, conf=res.confidence||{};
+    const col = cond==="spoiled" ? "var(--spoiled)" : cond==="fresh" ? "var(--fresh)" : "var(--ink3)";
+    const cc=$("hCond")?.querySelector("circle");
+    if(cc) cc.style.fill=col;
+    const fc=$("hFood")?.querySelector("circle");
+    if(fc) fc.style.fill="var(--accent)";
+    $("hCondVal").textContent = cond ? (conf[cond]??"")+"%" : "--";
+    $("hFoodVal").textContent = res.food ? String(res.food).slice(0,4) : "--";
+    $("netMeta").innerHTML = cond
+      ? `<b>${String(cond).toUpperCase()}</b> · ${res.food||"?"}`
+      : 'rejected';
+  }, t));
+}
+buildNet();
+
+/* ============================================================
+   CAMERA SOURCE
+   ============================================================ */
+function setMode(next){
+  if(mode===next) return;
+  stopLive();
+  mode=next;
+  $("modeServer").classList.toggle("on",mode==="rig");
+  $("modeDevice").classList.toggle("on",mode==="device");
+  $("modeServer").setAttribute("aria-pressed",mode==="rig");
+  $("modeDevice").setAttribute("aria-pressed",mode==="device");
+  $("preview").classList.toggle("hidden",mode!=="rig");
+  $("views").disabled = mode==="device";
+  if(mode==="device"){ stopPreview(); startDeviceCamera(); }
+  else { stopDeviceCamera(); startPreview(); }
+}
+$("modeServer").addEventListener("click",()=>setMode("rig"));
+$("modeDevice").addEventListener("click",()=>setMode("device"));
+
+async function startDeviceCamera(){
+  // getUserMedia needs a SECURE CONTEXT (https or localhost). Reaching this page
+  // at http://<board-ip>:8000 from a phone is not secure, so the browser blocks
+  // it. Fall back to a file input with capture="environment", which opens the
+  // phone camera app and works fine over plain http.
+  const secure = window.isSecureContext;
+  if(!secure || !navigator.mediaDevices?.getUserMedia){
+    $("devVideo").classList.add("hidden");
+    $("devFallback").classList.remove("hidden");
+    $("devFallbackMsg").innerHTML = secure
+      ? "This browser will not provide a live stream. Use the button below to take a photo."
+      : `Live streaming needs <b>https</b> or <b>localhost</b>, and this page is plain http,
+         so your browser blocks camera access. Tap below to take a photo instead — that works.`;
+    return;
+  }
+  try{
+    devStream = await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:{ideal:"environment"}, width:{ideal:1280}}});
+    $("devVideo").srcObject=devStream;
+    $("devVideo").classList.remove("hidden");
+    $("devFallback").classList.add("hidden");
+  }catch(e){
+    $("devVideo").classList.add("hidden");
+    $("devFallback").classList.remove("hidden");
+    $("devFallbackMsg").textContent =
+      "Camera permission denied or none found ("+e.name+"). Take a photo instead:";
+  }
+}
+function stopDeviceCamera(){
+  if(devStream){devStream.getTracks().forEach(t=>t.stop()); devStream=null;}
+  $("devVideo").classList.add("hidden");
+  $("devFallback").classList.add("hidden");
+}
+function grabDeviceFrame(){
+  const v=$("devVideo");
+  if(!v.videoWidth) return null;
+  const c=$("devCanvas");
+  // Downscale before sending - the model resizes to 160px anyway, so pushing a
+  // 1280px JPEG over Wi-Fi every 2 seconds is pure waste.
+  const w=640, h=Math.round(v.videoHeight*(640/v.videoWidth));
+  c.width=w; c.height=h;
+  c.getContext("2d").drawImage(v,0,0,w,h);
+  return c.toDataURL("image/jpeg",0.8);
+}
+async function classifyDeviceImage(dataUrl,save){
+  const r=await fetch("/api/classify",{method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({image:dataUrl,food:$("food").value,save})});
+  const rec=await r.json();
+  if(!r.ok){
+    $("rCond").textContent="ERROR"; $("rCond").className="cond none";
+    $("rSub").textContent=rec.detail||rec.error||"classification failed";
+    return null;
+  }
+  render(rec); if(save) refreshHistory();
+  return rec;
+}
+$("devFile").addEventListener("change",async e=>{
+  const file=e.target.files?.[0]; if(!file) return;
+  const dataUrl=await new Promise(res=>{
+    const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.readAsDataURL(file);});
+  busy=true; netPulse(); $("rSub").textContent="classifying…";
+  const rec=await classifyDeviceImage(dataUrl,true);
+  if(rec) netResult(rec.result||{});
+  busy=false; e.target.value="";
+});
+
+// Live preview via MJPEG: ONE connection, frames pushed as they arrive. The old
+// approach re-requested a JPEG on a timer, which capped the preview at under one
+// frame per second and paid full request overhead every time.
+let streamOn = false;
+function startPreview(){
+  if(streamOn || mode!=="rig") return;
+  $("preview").src = "/api/stream?t=" + Date.now();
+  streamOn = true;
+}
+// 1x1 transparent GIF. Assigning src="" would resolve to the page URL and make
+// the browser fetch the whole dashboard again as an image; a data URI closes the
+// stream without issuing any request.
+const BLANK = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+function stopPreview(){
+  if(!streamOn) return;
+  // Replacing src is what actually closes the connection and frees the server
+  // thread. Without it, every mode switch would leak one.
+  $("preview").src = BLANK;
+  streamOn = false;
+}
+function refreshPreview(){
+  if(mode==="rig") startPreview(); else stopPreview();
+}
+
+/* ============================================================
+   HEALTH
+   ============================================================ */
+async function health(){
+  try{
+    const h=await jget("/api/health");
+    $("srv").textContent="online"; $("dotSrv").className="dot on";
+    $("mBackend").textContent=h.backend;
+    $("mCam").textContent=h.camera;
+    $("mVer").textContent=h.ai_version;
+    thresholds=h.quality_thresholds||null;
+    $("demoBanner").classList.toggle("hidden",h.camera!=="demo");
+    $("heurBanner").classList.toggle("hidden",h.trained_model!==false);
+
+    const sel=$("food");
+    if(sel.options.length<=1 && h.foods){
+      for(const f of h.foods){
+        const o=document.createElement("option");
+        o.value=f; o.textContent=f.replace(/_/g," "); sel.appendChild(o);
+      }
+      const t=$("teachFood");   // no "auto" here - a label is mandatory
+      for(const f of h.foods){
+        const o=document.createElement("option");
+        o.value=f; o.textContent=f.replace(/_/g," "); t.appendChild(o);
+      }
+    }
+  }catch(e){
+    $("srv").textContent="offline"; $("dotSrv").className="dot warn";
+  }
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function render(rec){
+  const res=rec.result||{};
+  const cond=res.condition;
+  $("rFix").classList.add("hidden");
+  const notFood = res.status==="not_food";
+  $("rFood").textContent = notFood ? "—" : (res.food||"unknown").replace(/_/g," ");
+  $("rCond").textContent = cond ? cond.toUpperCase()
+                         : notFood ? "NOT PRODUCE" : "UNUSABLE IMAGE";
+  $("rCond").className="cond "+(cond||"none");
+
+  if(notFood){
+    // The model recognised this is not fruit or veg. Freshness is undefined, so
+    // no bars and no verdict - showing "82% fresh" for a hand would be worse
+    // than showing nothing.
+    $("rSub").textContent="the model does not think this is fruit or vegetable";
+    $("rBars").innerHTML="";
+    $("rEvidence").innerHTML="";
+    return;
+  }
+
+  if(cond){
+    $("rSub").textContent =
+      `${res.views_used}/${res.views_total} views · quality ${res.image_quality} · ${rec.elapsed_ms} ms`;
+  }else{
+    // Rejected. Show the MEASURED value against the threshold - "blurred" alone
+    // gives you nothing to act on.
+    const m=res.views?.[0]?.quality_metrics, t=thresholds||{};
+    let why=res.reason||"could not read the frame";
+    if(m){
+      const rules={
+        blurred:[`focus ${m.focus_variance}`,`needs ≥ ${t.min_focus_variance}`,
+                 "more light, or move the item further from the lens"],
+        too_dark:[`brightness ${m.brightness}`,`needs ≥ ${t.min_brightness}`,"add light"],
+        too_bright:[`brightness ${m.brightness}`,`needs ≤ ${t.max_brightness}`,"reduce glare"],
+        no_food_detected:[`food fills ${(m.food_area_fraction*100).toFixed(1)}%`,
+                 `needs ≥ ${(t.min_food_area_fraction*100).toFixed(1)}%`,"move it closer"],
+        food_too_far:[`food fills ${(m.food_area_fraction*100).toFixed(1)}%`,
+                 `needs ≥ ${(t.min_food_area_fraction*100).toFixed(1)}%`,"move it closer"],
+        multiple_objects:[`${m.object_count} objects seen`,"needs 1","show one item only"],
+        camera_obstructed:[`fills ${(m.food_area_fraction*100).toFixed(0)}% and out of focus`,
+                 "","pull the item back"],
+      };
+      const r=rules[res.reason];
+      if(r) why=`${res.reason} — ${r[0]}, ${r[1]}`;
+      $("rFix").textContent=r?"Try: "+r[2]:"";
+      $("rFix").classList.remove("hidden");
+    }
+    $("rSub").textContent=why;
+  }
+
+  const conf=res.confidence||{};
+  $("rBars").innerHTML=Object.keys(conf).map(k=>`
+    <div class="bar"><div class="t"><span>${k}</span><span>${conf[k]}%</span></div>
+    <div class="track"><div class="fill" style="width:${conf[k]}%;
+      background:var(--${k==="spoiled"?"spoiled":"fresh"})"></div></div></div>`).join("");
+
+  const ev=res.evidence||[];
+  $("rEvidence").innerHTML=ev.length?ev.map(e=>`<li>${e}</li>`).join(""):"";
+  if(rec.disclaimer) $("disclaimer").textContent=rec.disclaimer;
+}
+
+/* ============================================================
+   HISTORY
+   ============================================================ */
+async function refreshHistory(){
+  try{
+    const [h,s]=await Promise.all([jget("/api/history?limit=25"),jget("/api/stats")]);
+    $("stats").innerHTML=`
+      <div class="stat"><div class="k">Total</div><div class="v">${s.total}</div></div>
+      <div class="stat"><div class="k">Today</div><div class="v">${s.today}</div></div>
+      <div class="stat"><div class="k">Fresh</div><div class="v" style="color:var(--fresh)">${s.by_condition.fresh||0}</div></div>
+      <div class="stat"><div class="k">Spoiled</div><div class="v" style="color:var(--spoiled)">${s.by_condition.spoiled||0}</div></div>
+      <div class="stat"><div class="k">Spoiled rate</div><div class="v">${(s.spoiled_rate*100).toFixed(0)}%</div></div>`;
+    $("hist").innerHTML=h.items.length?h.items.map(r=>{
+      const res=r.result||{}, c=res.confidence||{};
+      const t=(r.timestamp||"").replace("T"," ").replace("+00:00","");
+      return `<tr>
+        <td class="mono">${t}</td>
+        <td>${(res.food||"?").replace(/_/g," ")}</td>
+        <td>${res.condition?`<span class="pill ${res.condition}">${res.condition}</span>`:"—"}</td>
+        <td class="mono">${c.fresh??"—"}</td>
+        <td class="mono">${c.spoiled??"—"}</td>
+        <td class="mono">${res.image_quality||"—"}</td>
+        <td class="mono">${res.views_used??"—"}</td>
+        <td class="mono">${r.elapsed_ms??"—"}</td></tr>`;
+    }).join(""):`<tr><td colspan="8" style="color:var(--ink3)">nothing yet</td></tr>`;
+  }catch(e){/* server may be restarting; next tick retries */}
+}
+
+/* ============================================================
+   INSPECT
+   ============================================================ */
+async function runInspect({views,save}){
+  busy=true;
+  netPulse();
+  try{
+    if(mode==="device"){
+      const dataUrl=grabDeviceFrame();
+      if(!dataUrl){ $("rSub").textContent="no frame from this device's camera yet";
+                    netReset(); return null; }
+      const rec=await classifyDeviceImage(dataUrl,save);
+      if(rec) netResult(rec.result||{});
+      return rec;
+    }
+    const r=await fetch("/api/inspect",{method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({views,save,food:$("food").value})});
+    const rec=await r.json();
+    if(!r.ok){
+      $("rCond").textContent="ERROR"; $("rCond").className="cond none";
+      $("rSub").textContent=rec.detail||rec.error||"inspection failed";
+      netReset(); return null;
+    }
+    render(rec); netResult(rec.result||{});
+    if(save) refreshHistory();
+    return rec;
+  }catch(e){
+    $("rSub").textContent="could not reach the server"; netReset(); return null;
+  }finally{ busy=false; }
+}
+
+$("run").addEventListener("click",async()=>{
+  stopLive();
+  $("run").disabled=true; $("run").textContent="Inspecting…";
+  $("rSub").textContent="capturing and rotating…"; $("keep").classList.add("hidden");
+  await runInspect({views:+$("views").value,save:true});
+  $("run").disabled=false; $("run").textContent="Inspect & save";
+});
+
+/* ---- live mode: 1 view every 2s, nothing saved ---- */
+let liveTimer=null;
+function stopLive(){
+  if(liveTimer===null) return;
+  clearInterval(liveTimer); liveTimer=null;
+  $("liveBtn").textContent="Go live"; $("liveBtn").classList.remove("on");
+  $("views").disabled=(mode==="device");
+}
+function startLive(){
+  $("liveBtn").textContent="Stop live"; $("liveBtn").classList.add("on");
+  $("views").disabled=true; $("keep").classList.remove("hidden");
+  const tick=async()=>{ if(busy) return; await runInspect({views:1,save:false}); };
+  tick(); liveTimer=setInterval(tick,2000);
+}
+$("liveBtn").addEventListener("click",()=>liveTimer===null?startLive():stopLive());
+
+$("keep").addEventListener("click",async()=>{
+  $("keep").disabled=true;
+  const wasLive=liveTimer!==null;
+  stopLive();
+  await runInspect({views:1,save:true});
+  $("keep").disabled=false; $("keep").classList.add("hidden");
+  if(wasLive) startLive();
+});
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden){ stopLive(); stopPreview(); }
+  else { refreshPreview(); }
+});
+
+/* ============================================================
+   TEACH
+   ============================================================ */
+async function currentFrameDataUrl(){
+  if(mode==="device") return grabDeviceFrame();
+  const r=await fetch("/api/snapshot?t="+Date.now(),{cache:"no-store"});
+  if(!r.ok) return null;
+  const blob=await r.blob();
+  return await new Promise(res=>{
+    const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.readAsDataURL(blob);});
+}
+async function teach(condition){
+  const food=$("teachFood").value;
+  if(!food){ $("teachMsg").textContent="Pick which food it is first."; return; }
+  const btns=[$("teachFresh"),$("teachSpoiled")];
+  btns.forEach(b=>b.disabled=true);
+  $("teachMsg").textContent="capturing…";
+  try{
+    const dataUrl=await currentFrameDataUrl();
+    if(!dataUrl){ $("teachMsg").textContent="no frame available from the camera"; return; }
+    const r=await fetch("/api/capture",{method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({image:dataUrl,condition,food})});
+    const j=await r.json();
+    if(!r.ok){ $("teachMsg").textContent=j.detail||j.error; return; }
+    $("teachMsg").innerHTML=`saved <code>${j.saved}</code>`;
+    updateTeachCount(j.counts,j.total);
+  }catch(e){ $("teachMsg").textContent="could not save ("+e.message+")"; }
+  finally{ btns.forEach(b=>b.disabled=false); }
+}
+function updateTeachCount(counts,total){
+  if(!total){ $("teachCount").textContent="no examples yet"; return; }
+  const parts=Object.entries(counts).map(([k,v])=>`${v} ${k}`).join(" · ");
+  const need=Math.max(0,400-total);
+  $("teachCount").innerHTML=`<b>${total}</b> captured (${parts})`+
+    (need?` — about ${need} more for a useful fine-tune`:" — enough to fine-tune");
+}
+$("teachFresh").addEventListener("click",()=>teach("fresh"));
+$("teachSpoiled").addEventListener("click",()=>teach("spoiled"));
+
+health(); refreshHistory(); refreshPreview();
+
+setInterval(health,15000);
+setInterval(refreshHistory,20000);
+/* ============================================================
+   TRAY SCAN
+   The compartment number always comes from the server's scan
+   controller, never from the model. The AI answers "what is in
+   this picture"; only the controller knows where the tray was
+   pointing when the picture was taken.
+   ============================================================ */
+let scanTimer = null;
+let scanTotal = 0;
+let scanAvailable = false;
+
+async function jpost(url, body){
+  const r = await fetch(url, {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify(body || {})
+  });
+  let data = null;
+  try { data = await r.json(); } catch(e) { data = null; }
+  if(!r.ok){
+    const detail = (data && (data.detail || data.error)) || (url+" -> "+r.status);
+    throw new Error(detail);
+  }
+  return data;
+}
+
+function condClass(c){
+  if(c === "fresh") return "fresh";
+  if(c === "spoiled") return "spoiled";
+  return "unknown";
+}
+
+function renderCompartments(total, results, current, running){
+  const grid = $("compGrid");
+  if(!grid) return;
+  const byNum = {};
+  (results || []).forEach(r => { byNum[r.compartment] = r; });
+
+  let html = "";
+  for(let n = 1; n <= total; n++){
+    const r = byNum[n];
+    const isActive = running && current === n;
+    let cls = "comp";
+    if(isActive) cls += " active";
+    else if(!r) cls += " pending";
+
+    let food = "—", cond = "not scanned", cc = "unknown", conf = "", warn = "";
+
+    if(isActive && !r){
+      food = "…"; cond = "scanning"; cc = "unknown";
+    } else if(r){
+      if(r.status === "ok"){
+        food = r.food || "unknown";
+        cond = r.condition || "unknown";
+        cc = condClass(r.condition);
+        // "Fresh classification: 96% confidence" - NOT "96% fresh".
+        conf = Math.round((r.condition_confidence || 0) * 100)
+               + "% confidence in this classification";
+      } else if(r.status === "not_food"){
+        food = "not produce"; cond = "rejected";
+        warn = "The model does not recognise this as food.";
+      } else {
+        food = "—"; cond = "image rejected";
+        warn = "Reason: " + (r.reason || "unknown");
+      }
+      if(r.image_quality === "poor" && !warn){
+        warn = "Poor image quality — treat this result with caution.";
+      }
+    }
+
+    html += '<div class="' + cls + '">'
+          +   '<div class="cn">Compartment ' + n + '</div>'
+          +   '<div class="cfood">' + food + '</div>'
+          +   '<div class="ccond ' + cc + '">' + cond + '</div>'
+          +   (conf ? '<div class="cconf">' + conf + '</div>' : '')
+          +   (warn ? '<div class="cwarn">' + warn + '</div>' : '')
+          + '</div>';
+  }
+  grid.innerHTML = html;
+}
+
+function applyScanStatus(st){
+  const running = !!st.running;
+  scanTotal = st.compartments || scanTotal;
+
+  $("scanState").textContent = (st.state || "IDLE").toLowerCase().replace(/_/g," ");
+  $("scanStart").disabled = running;
+  $("scanStop").disabled = !running;
+
+  $("scanProgress").textContent = running && st.total
+    ? "compartment " + (st.current_compartment || "—") + " · " + st.completed + " of " + st.total + " done"
+    : (st.completed ? st.completed + " compartment(s) scanned" : "");
+
+  const m = st.motor || {};
+  $("trayMeta").textContent =
+    "tray at " + (m.position || "?") + "/" + (st.compartments || "?") +
+    " · " + (m.moving ? "MOVING" : "stopped") +
+    " · " + (st.mode || "");
+
+  if(st.error){
+    $("scanNote").textContent = "Error: " + st.error;
+    $("scanNote").style.color = "var(--bad,#e2686d)";
+  }
+
+  renderCompartments(scanTotal, st.results, st.current_compartment, running);
+
+  if(running && !scanTimer){
+    scanTimer = setInterval(pollScan, 700);
+  } else if(!running && scanTimer){
+    clearInterval(scanTimer); scanTimer = null;
+  }
+}
+
+async function pollScan(){
+  try {
+    applyScanStatus(await jget("/api/scan/status"));
+  } catch(e){
+    if(scanTimer){ clearInterval(scanTimer); scanTimer = null; }
+  }
+}
+
+async function startScan(){
+  $("scanNote").style.color = "";
+  $("scanNote").textContent = "The tray stops before every photo. Percentages are the "
+    + "model's classification confidence, not a food-safety measurement.";
+  try {
+    $("scanStart").disabled = true;
+    await jpost("/api/scan/start", {});
+    await pollScan();
+    if(!scanTimer) scanTimer = setInterval(pollScan, 700);
+  } catch(e){
+    $("scanStart").disabled = false;
+    $("scanNote").textContent = "Could not start: " + e.message;
+    $("scanNote").style.color = "var(--bad,#e2686d)";
+  }
+}
+
+async function stopScan(){
+  try { await jpost("/api/scan/stop", {}); } catch(e){}
+  await pollScan();
+}
+
+async function initTray(){
+  let sys = null;
+  try { sys = await jget("/api/system/status"); } catch(e){ return; }
+
+  scanAvailable = !!sys.scan_available;
+  if(!scanAvailable){
+    $("trayCard").classList.add("hidden");
+    $("trayBanner").classList.remove("hidden");
+    $("trayBannerWhy").textContent = sys.scan_error || "the tray controller did not start.";
+    return;
+  }
+  scanTotal = (sys.tray && sys.tray.compartments) || 0;
+  renderCompartments(scanTotal, [], null, false);
+  await pollScan();
+}
+
+$("scanStart").addEventListener("click", startScan);
+$("scanStop").addEventListener("click", stopScan);
+initTray();
+</script>
+</body>
+</html>

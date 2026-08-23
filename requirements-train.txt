@@ -1,0 +1,4 @@
+# Extra dependencies needed ONLY for training/fine-tuning and Keras export.
+# Not required for heuristic inference or for running a pre-built .tflite model.
+-r requirements.txt
+tensorflow>=2.13   # includes tf.lite for training + export

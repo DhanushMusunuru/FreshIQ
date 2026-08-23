@@ -1,0 +1,14 @@
+name: FreshIQ
+description: "Food freshness inspection: a USB camera and a TFLite model on the Linux side, a 4-compartment tray turned by a NEMA 17 through an A4988 on the MCU side."
+icon: 🍅
+version: "1.0.0"
+
+# The dashboard is a real exposed service, so declare it. The app binds
+# 0.0.0.0:8000 itself and the port was reachable even with an empty list, so
+# this is a correctness fix rather than the cause of anything - but an app that
+# serves a UI should say so.
+ports:
+  - 8000
+
+# No App Lab Bricks: the AI is our own TFLite pipeline in python/ai/.
+bricks: []

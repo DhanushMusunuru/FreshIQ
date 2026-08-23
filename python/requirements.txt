@@ -1,0 +1,29 @@
+# Core runtime dependencies for FreshIQ inference (heuristic backend + camera).
+# This is all you need to run the pipeline, tests, and the camera path.
+numpy>=1.24
+opencv-python-headless>=4.8   # use opencv-python if you need cv2.imshow windows
+pillow>=9.5
+
+# --- Optional: trained deep-learning inference on an edge device -------------
+# Install ONE of these only if you have trained a model and want the NN backend:
+#   pip install tflite-runtime      # lightweight, recommended for the UNO Q / edge
+# or the full TensorFlow (also covers training) via requirements-train.txt
+
+# TFLite runtime for the trained model (see docs/DEPLOY.md)
+ai-edge-litert>=1.0
+
+# --- Tray motor ---------------------------------------------------------------
+# Talks to the MCU that drives the stepper (firmware/freshiq_tray/).
+# Without these the server still runs: the dashboard, camera and AI all work,
+# and tray control reports itself unavailable rather than crashing. Set
+# motor.driver = "simulated" in config/freshiq.json to work without hardware.
+
+# motor.driver = "bridge"  (Arduino UNO Q onboard MCU - the default).
+# MessagePack is the wire format of arduino-router, the service that owns the
+# internal MPU<->MCU UART. Needed in whatever interpreter runs FreshIQ, so if
+# you use a .venv, it must be installed INSIDE that .venv.
+msgpack>=1.0
+
+# motor.driver = "serial"  (a SEPARATE Arduino wired over USB).
+# Not used on the UNO Q: its own MCU never enumerates as /dev/ttyACM*.
+pyserial>=3.5

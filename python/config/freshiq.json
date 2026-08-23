@@ -1,0 +1,76 @@
+{
+  "_comment": "FreshIQ device configuration. Everything the rig needs to know about ITSELF lives here. Model/threshold tuning lives in ai/config.py. Copy this file, edit, and restart the server - nothing here requires a code change.",
+
+  "device_id": "freshiq-unit-01",
+
+  "mode": "production",
+  "_mode": "production = real camera + real motor. development = simulated motor and sample images, so the whole scan can be exercised on a laptop with no hardware.",
+
+  "tray": {
+    "compartments": 4,
+    "_compartments": "4 is what the CAD tray actually has (cad/freshiq_cad/params.py BUILD.n_compartments). Change BOTH if you reprint a different tray.",
+
+    "steps_per_revolution": 200,
+    "_steps_per_revolution": "NEMA 17 at 1.8 deg/step. Drive is 1:1 direct through the coupling hub - no gearing - so one tray revolution is one motor revolution.",
+
+    "microsteps": 1,
+    "_microsteps": "A4988 MS1/MS2/MS3 setting: 1, 2, 4, 8 or 16. VERIFY against your DIP switches / jumpers. steps_per_compartment = steps_per_revolution * microsteps / compartments.",
+
+    "stabilize_seconds": 1.2,
+    "_stabilize_seconds": "Dead time after the motor reports STOPPED before the camera is allowed to capture. The tray is a 200 mm platter on a lazy-susan bearing; it keeps wobbling after the motor stops. Raise this if images look motion-blurred.",
+
+    "seconds_per_compartment": 3.5,
+    "_seconds_per_compartment": "How long ONE compartment of travel should take. The MCU is told a per-step delay derived from this and steps_per_compartment, so changing the speed is a config edit and a restart - no re-flash. Raise it for a gentler tray, lower it for a faster scan. Must stay below motor.ack_timeout_seconds.",
+
+    "move_timeout_seconds": 20.0
+  },
+
+  "motor": {
+    "driver": "bridge",
+    "_driver": "bridge = the Arduino UNO Q's ONBOARD MCU, reached through the arduino-router RPC service. This is correct for this board: the MCU is on the same PCB and never appears as /dev/ttyACM*. serial = a SEPARATE Arduino wired over USB. simulated = no hardware, movement is faked with sleeps. auto = bridge if the router socket exists, else serial.",
+
+    "rpc_socket": "/var/run/arduino-router.sock",
+    "_rpc_socket": "Where arduino-router listens. Only used by driver 'bridge'. Check the service with: systemctl status arduino-router",
+
+    "port": "auto",
+    "_port": "Only used by driver 'serial'. auto = find an external Arduino, preferring /dev/ttyACM* over /dev/ttyUSB*. Ignored entirely by driver 'bridge'.",
+
+    "baud": 115200,
+    "ack_timeout_seconds": 15.0,
+    "_ack_timeout_seconds": "How long to wait for the MCU to report the move finished. Must exceed the longest single-compartment move. One compartment at 50 full steps takes well under a second, so 15 s is generous."
+  },
+
+  "camera": {
+    "index": 0,
+    "_index": "OpenCV camera index. On Linux /dev/video0 is usually index 0. Check with: ls /dev/video*",
+
+    "width": 1280,
+    "height": 720,
+    "warmup_frames": 5,
+    "views_per_compartment": 1,
+    "_views_per_compartment": "Photos taken per compartment. The tray does NOT move between them - they are repeat shots of the same item, which the AI aggregates (worst view wins). Raise to 2-3 if single shots are noisy.",
+
+    "inter_view_delay_seconds": 0.35
+  },
+
+  "lighting": {
+    "mode": "always_on",
+    "_mode": "always_on = white LED strip wired straight to 12 V, no software control. This is the configured hardware. The AI is colour-sensitive, so constant lighting is a feature, not a limitation - just never mix in daylight or RGB."
+  },
+
+  "server": {
+    "host": "0.0.0.0",
+    "_host": "0.0.0.0 so phones and laptops on the same Wi-Fi can reach it. Do NOT port-forward this to the internet; it has no authentication.",
+    "port": 8000
+  },
+
+  "storage": {
+    "history_file": "data/inspections.jsonl",
+    "save_images": true,
+    "image_dir": "data/inspections",
+    "_image_dir": "Laid out as data/inspections/YYYY-MM-DD/compartment_01/<id>.jpg",
+    "retention_days": 14,
+    "max_images": 2000,
+    "_retention": "Oldest images are deleted once EITHER limit is exceeded. The JSONL history is never auto-deleted - it is tiny."
+  }
+}

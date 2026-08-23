@@ -1,0 +1,42 @@
+{
+  "_comment": "Copy to ai/config.json (or point FRESHIQ_CONFIG at it) to override AI defaults. Any subset of keys is allowed; unspecified values keep their code defaults. See ai/config.py. NOTE: this file tunes the MODEL side only. Rig settings (compartments, serial port, camera index) live in config/freshiq.json.",
+
+  "_WARNING_conditions": "These MUST match models/labels.json 'classes' for the deployed model, which is [\"fresh\", \"spoiled\"]. An earlier version of this example shipped [\"fresh\",\"ripe\",\"spoiled\"] against a 2-output model: 'ripe' can never be predicted, so it sits at 0% forever and quietly misleads. Only add a third class if you retrain with real ripe data.",
+  "conditions": ["fresh", "spoiled"],
+
+  "_WARNING_foods": "The trained food head has EIGHT outputs. These are the exact classes in models/labels.json, in order. Adding names here does not teach the model anything - it only lets the heuristic fallback guess at them. Do not reorder.",
+  "foods": [
+    "apple", "banana", "cucumber", "mango",
+    "okra", "orange", "potato", "tomato",
+    "unknown"
+  ],
+
+  "quality": {
+    "min_brightness": 40.0,
+    "max_brightness": 225.0,
+    "min_focus_variance": 55.0,
+    "_min_focus_variance": "Lower to ~20 for soft laptop/phone cameras. A tray-mounted USB camera at a fixed distance is usually sharper.",
+    "min_food_area_fraction": 0.03,
+    "max_food_area_fraction": 0.97
+  },
+
+  "heuristic": {
+    "dark_spot_spoiled_fraction": 0.12,
+    "mold_min_fraction": 0.015
+  },
+
+  "aggregation": {
+    "spoiled_significant_threshold": 45.0,
+    "worst_view_weight": 0.65
+  },
+
+  "model": {
+    "backend": "auto",
+    "tflite_model_path": "models/freshiq_model.tflite",
+    "keras_model_path": "models/freshiq_model.keras",
+    "labels_path": "models/labels.json",
+
+    "_input_size": "160 is what the deployed model actually takes (verified: input tensor is 1x160x160x3 float32). labels.json carries the real value and OVERRIDES this at load time, so the two cannot drift - it is listed here only for readability.",
+    "input_size": 160
+  }
+}

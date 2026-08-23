@@ -1,0 +1,33 @@
+{
+  "type": "condition+food",
+  "classes": [
+    "fresh",
+    "spoiled"
+  ],
+  "foods": [
+    "apple",
+    "banana",
+    "cucumber",
+    "mango",
+    "okra",
+    "orange",
+    "potato",
+    "tomato"
+  ],
+  "input_size": 160,
+  "architecture": "MobileNetV2-alpha1.0",
+  "preprocessing": "RGB float32 in [0,1]; model applies Rescaling(2,-1) internally",
+  "spoiled_threshold": 0.5,
+  "not_food_class": null,
+  "test_metrics": {
+    "condition_accuracy": 0.9991860895301516,
+    "spoiled_recall": 0.9984334947308459,
+    "food_accuracy": 0.9985941546429893,
+    "test_photos": 13515
+  },
+  "notes": "Trained on Kaggle ulnnproject/food-freshness-dataset (Apache 2.0). Web photos of supermarket produce, NOT photos from the FreshIQ rig. Fine-tune on real rig photos before trusting these numbers in production.",
+  "tflite_output_index": {
+    "condition": 1,
+    "food": 0
+  }
+}

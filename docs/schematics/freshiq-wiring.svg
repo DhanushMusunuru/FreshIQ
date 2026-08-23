@@ -1,0 +1,224 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1000" width="1400" height="1000"
+     role="img" aria-label="FreshIQ tray drive and power schematic. A 12 volt supply feeds a positive rail and a ground rail. The Arduino UNO Q drives an A4988 stepper driver on pins D5 enable, D2 step and D3 dir, with VDD taken from plus 3.3 volts. RESET and SLEEP are jumpered. A 100 microfarad capacitor sits across VMOT and ground. Four coil wires run to a NEMA 17 motor. A white LED strip and a USB camera complete the system.">
+
+  <title>FreshIQ — tray drive and power schematic</title>
+
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#16201C"/>
+    </marker>
+  </defs>
+
+  <!-- paper: a schematic is printed and taken to the bench, so it commits to
+       ink-on-white rather than following a viewer theme -->
+  <rect width="1400" height="1000" fill="#FFFFFF"/>
+  <rect x="24" y="24" width="1352" height="952" fill="none" stroke="#16201C" stroke-width="1.6"/>
+  <rect x="30" y="30" width="1340" height="940" fill="none" stroke="#16201C" stroke-width="0.6" opacity=".45"/>
+
+  <g font-family="ui-monospace, 'Cascadia Mono', 'SF Mono', Consolas, monospace">
+
+    <!-- ================= power rails ================= -->
+    <line x1="250" y1="110" x2="1340" y2="110" stroke="#C2591C" stroke-width="2.6"/>
+    <text x="240" y="106" text-anchor="end" font-size="15" font-weight="700" fill="#C2591C">+12 V</text>
+    <line x1="250" y1="800" x2="1340" y2="800" stroke="#41534A" stroke-width="2.6"/>
+    <text x="240" y="806" text-anchor="end" font-size="15" font-weight="700" fill="#41534A">GND</text>
+
+    <!-- ================= J1 supply ================= -->
+    <rect x="60" y="150" width="158" height="86" fill="none" stroke="#16201C" stroke-width="1.5"/>
+    <text x="139" y="180" text-anchor="middle" font-size="14" font-weight="700" fill="#16201C">J1 · 12 V DC</text>
+    <text x="139" y="200" text-anchor="middle" font-size="11.5" fill="#41534A">3 A / 36 W min</text>
+    <text x="139" y="219" text-anchor="middle" font-size="11.5" fill="#41534A">5.5 × 2.1 centre +</text>
+    <path d="M218 174 L250 174 L250 110" fill="none" stroke="#C2591C" stroke-width="2"/>
+    <circle cx="250" cy="110" r="4" fill="#C2591C"/>
+    <path d="M218 214 L272 214 L272 800" fill="none" stroke="#41534A" stroke-width="2"/>
+    <circle cx="272" cy="800" r="4" fill="#41534A"/>
+
+    <!-- ================= camera ================= -->
+    <rect x="60" y="392" width="176" height="80" fill="none" stroke="#16201C" stroke-width="1.5"/>
+    <text x="148" y="422" text-anchor="middle" font-size="13.5" font-weight="700" fill="#16201C">USB camera</text>
+    <text x="148" y="442" text-anchor="middle" font-size="11.5" fill="#41534A">1/4 in CMOS · UVC</text>
+    <text x="148" y="460" text-anchor="middle" font-size="11.5" fill="#41534A">/dev/video0</text>
+    <path d="M236 432 L300 432" stroke="#16201C" stroke-width="1.8" marker-end="url(#ar)"/>
+    <text x="268" y="424" text-anchor="middle" font-size="11" fill="#41534A">USB</text>
+
+    <!-- ================= UNO Q ================= -->
+    <rect x="300" y="260" width="260" height="360" fill="none" stroke="#16201C" stroke-width="2"/>
+    <text x="430" y="300" text-anchor="middle" font-size="15" font-weight="700" fill="#16201C">Arduino UNO Q</text>
+    <text x="430" y="320" text-anchor="middle" font-size="11.5" fill="#41534A">Linux SoC + STM32U585</text>
+    <text x="430" y="338" text-anchor="middle" font-size="11.5" fill="#41534A">all I/O 3.3 V</text>
+    <text x="430" y="378" text-anchor="middle" font-size="11" fill="#7A8A82">JDIGITAL header</text>
+
+    <!-- UNO Q pin labels -->
+    <g font-size="12.5" font-weight="700" text-anchor="end" fill="#0A6B66">
+      <text x="552" y="286">D5</text>
+      <text x="552" y="526">D2</text>
+      <text x="552" y="566">D3</text>
+    </g>
+    <g font-size="11" text-anchor="middle" fill="#41534A">
+      <text x="430" y="294">ENABLE</text>
+      <text x="430" y="534">STEP</text>
+      <text x="430" y="574">DIR</text>
+    </g>
+    <text x="352" y="252" text-anchor="middle" font-size="12.5" font-weight="700" fill="#C2591C">VIN</text>
+    <text x="424" y="640" text-anchor="middle" font-size="12.5" font-weight="700" fill="#0A6B66">+3V3</text>
+    <text x="494" y="640" text-anchor="middle" font-size="12.5" font-weight="700" fill="#41534A">GND</text>
+
+    <!-- VIN up to +12 rail -->
+    <path d="M352 260 L352 110" fill="none" stroke="#C2591C" stroke-width="2"/>
+    <circle cx="352" cy="110" r="4" fill="#C2591C"/>
+    <text x="362" y="150" font-size="11" fill="#C2591C">7–24 V in</text>
+    <!-- GND down to rail -->
+    <path d="M494 620 L494 800" fill="none" stroke="#41534A" stroke-width="2"/>
+    <circle cx="494" cy="800" r="4" fill="#41534A"/>
+
+    <!-- ================= A4988 ================= -->
+    <rect x="640" y="260" width="260" height="360" fill="none" stroke="#16201C" stroke-width="2"/>
+    <text x="770" y="245" text-anchor="middle" font-size="15" font-weight="700" fill="#16201C">U1 · A4988</text>
+
+    <g font-size="12.5" fill="#16201C">
+      <text x="654" y="294">ENABLE</text>
+      <text x="654" y="334">MS1</text>
+      <text x="654" y="374">MS2</text>
+      <text x="654" y="414">MS3</text>
+      <text x="654" y="454">RESET</text>
+      <text x="654" y="494">SLEEP</text>
+      <text x="654" y="534">STEP</text>
+      <text x="654" y="574">DIR</text>
+    </g>
+    <g font-size="12.5" fill="#16201C" text-anchor="end">
+      <text x="886" y="294">VMOT</text>
+      <text x="886" y="334">GND</text>
+      <text x="886" y="374">2B</text>
+      <text x="886" y="414">2A</text>
+      <text x="886" y="454">1A</text>
+      <text x="886" y="494">1B</text>
+      <text x="886" y="534">VDD</text>
+      <text x="886" y="574">GND</text>
+    </g>
+
+    <!-- logic wires: straight runs, pins deliberately aligned -->
+    <g stroke="#0A6B66" stroke-width="2" fill="none">
+      <path d="M560 290 L640 290"/>
+      <path d="M560 530 L640 530"/>
+      <path d="M560 570 L640 570"/>
+    </g>
+
+    <!-- MS1-3 no-connect -->
+    <g stroke="#7A8A82" stroke-width="1.4" fill="none">
+      <path d="M640 330 L606 330"/><path d="M640 370 L606 370"/><path d="M640 410 L606 410"/>
+    </g>
+    <g fill="#FFFFFF" stroke="#7A8A82" stroke-width="1.4">
+      <circle cx="602" cy="330" r="4"/><circle cx="602" cy="370" r="4"/><circle cx="602" cy="410" r="4"/>
+    </g>
+    <text x="588" y="374" text-anchor="end" font-size="11.5" fill="#7A8A82">n/c</text>
+    <text x="588" y="390" text-anchor="end" font-size="11.5" fill="#7A8A82">full step</text>
+
+    <!-- JP1 RESET-SLEEP -->
+    <path d="M640 450 L612 450 L612 490 L640 490" fill="none" stroke="#B3261E" stroke-width="2.6"/>
+    <circle cx="612" cy="470" r="4" fill="#B3261E"/>
+    <text x="600" y="466" text-anchor="end" font-size="12" font-weight="700" fill="#B3261E">JP1</text>
+    <text x="600" y="482" text-anchor="end" font-size="11" fill="#B3261E">req'd</text>
+
+    <!-- VMOT to +12 -->
+    <path d="M900 290 L940 290 L940 110" fill="none" stroke="#C2591C" stroke-width="2"/>
+    <circle cx="940" cy="110" r="4" fill="#C2591C"/>
+
+    <!-- motor GND down to rail -->
+    <path d="M900 330 L975 330 L975 800" fill="none" stroke="#41534A" stroke-width="2"/>
+    <circle cx="975" cy="800" r="4" fill="#41534A"/>
+    <circle cx="975" cy="330" r="4" fill="#41534A"/>
+
+    <!-- logic GND down to rail -->
+    <path d="M900 570 L946 570 L946 800" fill="none" stroke="#41534A" stroke-width="2"/>
+    <circle cx="946" cy="800" r="4" fill="#41534A"/>
+
+    <!-- VDD from +3V3, routed under both chips -->
+    <path d="M424 620 L424 700 L926 700 L926 530 L900 530" fill="none" stroke="#0A6B66" stroke-width="2"/>
+    <text x="675" y="692" text-anchor="middle" font-size="12" font-weight="700" fill="#0A6B66">VDD ← +3V3 only — never +5 V</text>
+
+    <!-- C1 across VMOT / GND, above the coil runs so nothing crosses it -->
+    <path d="M1012 110 L1012 182" fill="none" stroke="#C2591C" stroke-width="2"/>
+    <circle cx="1012" cy="110" r="4" fill="#C2591C"/>
+    <line x1="986" y1="182" x2="1038" y2="182" stroke="#C2591C" stroke-width="3.4"/>
+    <line x1="986" y1="196" x2="1038" y2="196" stroke="#41534A" stroke-width="3.4"/>
+    <path d="M1012 196 L1012 240 L975 240" fill="none" stroke="#41534A" stroke-width="2"/>
+    <circle cx="975" cy="240" r="4" fill="#41534A"/>
+    <text x="1048" y="180" font-size="12.5" font-weight="700" fill="#16201C">C1</text>
+    <text x="1048" y="197" font-size="11.5" fill="#41534A">100 µF 25 V</text>
+    <text x="978" y="176" text-anchor="end" font-size="13" font-weight="700" fill="#C2591C">+</text>
+
+    <!-- ================= coils to motor ================= -->
+    <g stroke="#16201C" stroke-width="2" fill="none">
+      <path d="M900 370 L1112 370"/>
+      <path d="M900 410 L1112 410"/>
+      <path d="M900 450 L1112 450"/>
+      <path d="M900 490 L1112 490"/>
+    </g>
+    <g font-size="11" fill="#41534A">
+      <text x="1000" y="363">blue</text>
+      <text x="1000" y="403">red</text>
+      <text x="1000" y="443">black</text>
+      <text x="1000" y="483">green</text>
+    </g>
+
+    <!-- motor housing -->
+    <rect x="1084" y="326" width="230" height="208" fill="none" stroke="#16201C"
+          stroke-width="1.4" stroke-dasharray="7 5"/>
+    <text x="1199" y="558" text-anchor="middle" font-size="14" font-weight="700" fill="#16201C">M1 · NEMA 17</text>
+    <text x="1199" y="576" text-anchor="middle" font-size="11.5" fill="#41534A">1.8° · 200 steps/rev · 1:1</text>
+
+    <rect x="1112" y="348" width="180" height="84" fill="none" stroke="#16201C" stroke-width="1.5"/>
+    <text x="1202" y="396" text-anchor="middle" font-size="12.5" fill="#16201C">coil B</text>
+    <rect x="1112" y="448" width="180" height="66" fill="none" stroke="#16201C" stroke-width="1.5"/>
+    <text x="1202" y="486" text-anchor="middle" font-size="12.5" fill="#16201C">coil A</text>
+
+    <!-- ================= LED strip ================= -->
+    <rect x="1150" y="150" width="180" height="76" fill="none" stroke="#16201C" stroke-width="1.5"/>
+    <text x="1240" y="178" text-anchor="middle" font-size="12.5" font-weight="700" fill="#16201C">LED1 · white strip</text>
+    <text x="1240" y="196" text-anchor="middle" font-size="11" fill="#41534A">12 V · always on</text>
+    <text x="1240" y="212" text-anchor="middle" font-size="11" fill="#41534A">no control line</text>
+    <path d="M1180 150 L1180 110" fill="none" stroke="#C2591C" stroke-width="2"/>
+    <circle cx="1180" cy="110" r="4" fill="#C2591C"/>
+    <path d="M1300 226 L1300 262 L1340 262 L1340 800" fill="none" stroke="#41534A" stroke-width="2"/>
+    <circle cx="1340" cy="800" r="4" fill="#41534A"/>
+
+    <!-- ================= notes ================= -->
+    <line x1="60" y1="826" x2="920" y2="826" stroke="#16201C" stroke-width="0.8" opacity=".5"/>
+    <text x="60" y="850" font-size="12.5" font-weight="700" fill="#16201C">NOTES</text>
+    <g font-size="11.5" fill="#41534A">
+      <text x="60" y="872">1.  U1 VDD from +3V3 ONLY. At VDD = 5 V the logic-HIGH threshold is 3.5 V and a 3.3 V output never reaches it.</text>
+      <text x="60" y="890">2.  JP1 is a wire you add. RESET floats by default and holds U1 in reset — nothing moves, nothing looks broken.</text>
+      <text x="60" y="908">3.  Fit C1 within 50 mm of U1 BEFORE first power-up. Motor inductance without bulk capacitance destroys U1 outright.</text>
+      <text x="60" y="926">4.  Never unplug M1 while powered. Same failure as note 3.</text>
+      <text x="60" y="944">5.  Set U1 current limit before use:  Vref = I × 8 × Rsense.  1.0 A with R100 = 0.80 V.</text>
+      <text x="60" y="962">6.  Verify coil pairs by continuity; wire colours vary by supplier. All grounds star back to J1.</text>
+    </g>
+
+    <!-- ================= title block ================= -->
+    <rect x="950" y="826" width="390" height="140" fill="none" stroke="#16201C" stroke-width="1.5"/>
+    <line x1="950" y1="866" x2="1340" y2="866" stroke="#16201C" stroke-width="0.9"/>
+    <line x1="950" y1="906" x2="1340" y2="906" stroke="#16201C" stroke-width="0.9"/>
+    <line x1="1180" y1="906" x2="1180" y2="966" stroke="#16201C" stroke-width="0.9"/>
+    <text x="964" y="853" font-size="15" font-weight="700" fill="#16201C">FreshIQ — tray drive &amp; power</text>
+    <text x="964" y="892" font-size="12" fill="#41534A">Food inspection station · 4 compartments</text>
+    <text x="964" y="928" font-size="10.5" fill="#7A8A82">SHEET</text>
+    <text x="964" y="948" font-size="13" font-weight="700" fill="#16201C">1 of 1</text>
+    <text x="1194" y="928" font-size="10.5" fill="#7A8A82">SUPPLY</text>
+    <text x="1194" y="948" font-size="13" font-weight="700" fill="#16201C">12 V · 3 A</text>
+
+    <!-- ================= legend ================= -->
+    <g font-size="11" fill="#41534A">
+      <circle cx="66" cy="768" r="4" fill="#41534A"/>
+      <text x="80" y="772">junction — wires connected</text>
+      <path d="M268 758 L268 780 M256 769 L282 769" stroke="#41534A" stroke-width="1.4"/>
+      <text x="296" y="772">crossing without a dot — NOT connected</text>
+      <line x1="600" y1="769" x2="628" y2="769" stroke="#C2591C" stroke-width="2.6"/>
+      <text x="636" y="772">12 V</text>
+      <line x1="686" y1="769" x2="714" y2="769" stroke="#0A6B66" stroke-width="2.6"/>
+      <text x="722" y="772">3.3 V logic</text>
+      <line x1="806" y1="769" x2="834" y2="769" stroke="#B3261E" stroke-width="2.6"/>
+      <text x="842" y="772">must be fitted</text>
+    </g>
+
+  </g>
+</svg>

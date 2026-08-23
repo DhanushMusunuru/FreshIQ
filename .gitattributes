@@ -1,0 +1,19 @@
+# Shell scripts and the sketch MUST stay LF. A CRLF checkout makes Linux fail
+# with "bad interpreter: /usr/bin/env bash^M", which reads as a missing shell
+# rather than a line-ending problem and wastes an hour.
+*.sh        text eol=lf
+*.ino       text eol=lf
+*.yaml      text eol=lf
+*.yml       text eol=lf
+*.py        text eol=lf
+*.json      text eol=lf
+
+# Binary - never touch these
+*.tflite    binary
+*.keras     binary
+*.jpg       binary
+*.png       binary
+*.pdf       binary
+*.docx      binary
+*.stl       binary
+*.step      binary

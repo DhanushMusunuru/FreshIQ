@@ -1,0 +1,1023 @@
+<title>FreshIQ Build Manual</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+<style>
+  /* Palette inherited from backend/dashboard.html so the docs and the product
+     read as one thing. Light is the base; dark redefines tokens only. */
+  :root{
+    --bg:#F4F7F5; --panel:#FFFFFF; --panel2:#EDF2EF; --panel3:#E2EAE5;
+    --line:#D8E2DC; --line2:#C3D1C9;
+    --ink:#0E1512; --ink2:#41534A; --ink3:#5C6E64;
+    --accent:#0A6B66; --on-accent:#FFFFFF;
+    --fresh:#1E8C4C; --spoiled:#C2591C; --warn:#96790F; --power:#B4610E;
+    --danger:#B3261E;
+    --shadow:0 1px 2px rgba(14,21,18,.05), 0 8px 24px rgba(14,21,18,.05);
+    --mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+    --sans:"IBM Plex Sans",ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --cond:"IBM Plex Sans Condensed","IBM Plex Sans",ui-sans-serif,sans-serif;
+    --r:10px;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#0B0F0D; --panel:#121815; --panel2:#1A221E; --panel3:#222C27;
+      --line:#26322C; --line2:#33423A;
+      --ink:#E9F1EC; --ink2:#A8BBB0; --ink3:#84998D;
+      --accent:#3FD0C9; --on-accent:#04211F;
+      --fresh:#4ED47F; --spoiled:#F0813F; --warn:#E5C04A; --power:#E8A33D;
+      --danger:#F2777A;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.3);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0B0F0D; --panel:#121815; --panel2:#1A221E; --panel3:#222C27;
+    --line:#26322C; --line2:#33423A;
+    --ink:#E9F1EC; --ink2:#A8BBB0; --ink3:#84998D;
+    --accent:#3FD0C9; --on-accent:#04211F;
+    --fresh:#4ED47F; --spoiled:#F0813F; --warn:#E5C04A; --power:#E8A33D;
+    --danger:#F2777A;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.3);
+  }
+
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto} *{transition:none !important} }
+
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:var(--sans); font-size:16px; line-height:1.62;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .shell{max-width:1180px;margin:0 auto;padding:0 20px 96px;
+         display:grid;grid-template-columns:216px minmax(0,1fr);gap:44px}
+  @media (max-width:900px){ .shell{grid-template-columns:1fr;gap:0} }
+
+  /* ---------- masthead ---------- */
+  .mast{grid-column:1/-1;padding:56px 0 30px;border-bottom:1px solid var(--line);margin-bottom:40px}
+  .kicker{font-family:var(--mono);font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;
+          color:var(--accent);margin-bottom:14px}
+  .mast h1{font-family:var(--cond);font-size:clamp(2.4rem,6vw,3.9rem);font-weight:700;
+           letter-spacing:-.02em;line-height:1.02;margin:0 0 14px;text-wrap:balance}
+  .mast p{max-width:62ch;margin:0;color:var(--ink2);font-size:1.06rem}
+  .facts{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+  .fact{font-family:var(--mono);font-size:.72rem;padding:5px 11px;border-radius:100px;
+        border:1px solid var(--line2);color:var(--ink2);background:var(--panel)}
+  .fact b{color:var(--ink);font-weight:600}
+
+  /* ---------- nav ---------- */
+  nav{position:sticky;top:24px;align-self:start;max-height:calc(100vh - 48px);overflow-y:auto}
+  @media (max-width:900px){
+    nav{position:static;max-height:none;margin-bottom:36px;padding:18px;
+        background:var(--panel);border:1px solid var(--line);border-radius:var(--r)}
+  }
+  nav .navlabel{font-family:var(--mono);font-size:.62rem;letter-spacing:.18em;
+                text-transform:uppercase;color:var(--ink3);margin-bottom:12px}
+  nav ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1px}
+  nav a{display:flex;gap:9px;padding:5px 8px;border-radius:6px;text-decoration:none;
+        color:var(--ink2);font-size:.86rem;line-height:1.35;border-left:2px solid transparent}
+  nav a:hover{background:var(--panel2);color:var(--ink)}
+  nav a:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  nav a .n{font-family:var(--mono);font-size:.7rem;color:var(--ink3);padding-top:2px}
+
+  /* ---------- sections ---------- */
+  section{scroll-margin-top:24px;margin-bottom:56px}
+  h2{font-family:var(--cond);font-size:1.72rem;font-weight:700;letter-spacing:-.012em;
+     margin:0 0 6px;text-wrap:balance;display:flex;align-items:baseline;gap:12px}
+  h2 .num{font-family:var(--mono);font-size:.8rem;font-weight:500;color:var(--accent)}
+  h3{font-family:var(--cond);font-size:1.14rem;font-weight:600;margin:32px 0 8px;letter-spacing:-.005em}
+  .lede{color:var(--ink2);max-width:66ch;margin:0 0 22px}
+  p{max-width:68ch}
+  a{color:var(--accent)}
+
+  code{font-family:var(--mono);font-size:.86em;background:var(--panel2);
+       padding:.1em .38em;border-radius:4px;border:1px solid var(--line)}
+  pre{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+      padding:14px 16px;overflow-x:auto;box-shadow:var(--shadow)}
+  pre code{background:none;border:none;padding:0;font-size:.82rem;line-height:1.7}
+
+  table{width:100%;border-collapse:collapse;font-size:.88rem;margin:6px 0 4px}
+  .scroll{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);
+          background:var(--panel);box-shadow:var(--shadow)}
+  .scroll table{margin:0}
+  th{text-align:left;font-family:var(--mono);font-size:.66rem;letter-spacing:.12em;
+     text-transform:uppercase;color:var(--ink3);font-weight:500;
+     padding:11px 14px;border-bottom:1px solid var(--line2);white-space:nowrap}
+  td{padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--ink2)}
+  tr:last-child td{border-bottom:none}
+  td b,td strong{color:var(--ink);font-weight:600}
+  td code{white-space:nowrap}
+  .num-col{font-variant-numeric:tabular-nums;font-family:var(--mono);color:var(--ink)}
+
+  /* ---------- callouts ---------- */
+  .note{border-left:3px solid var(--accent);background:var(--panel);padding:14px 18px;
+        border-radius:0 var(--r) var(--r) 0;margin:20px 0;box-shadow:var(--shadow)}
+  .note.warn{border-left-color:var(--warn)}
+  .note.stop{border-left-color:var(--danger)}
+  .note .t{font-family:var(--mono);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;
+           color:var(--ink3);margin-bottom:5px}
+  .note.warn .t{color:var(--warn)} .note.stop .t{color:var(--danger)}
+  .note p{margin:0;max-width:64ch}
+  .note p + p{margin-top:9px}
+
+  /* ---------- figures ---------- */
+  figure{margin:26px 0;background:var(--panel);border:1px solid var(--line);
+         border-radius:var(--r);padding:22px 20px 14px;box-shadow:var(--shadow)}
+  .figscroll{overflow-x:auto}
+  figure svg{display:block;width:100%;height:auto;color:var(--ink2)}
+  figcaption{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);
+             font-size:.83rem;color:var(--ink3);max-width:70ch}
+  figcaption b{color:var(--ink2)}
+
+  .legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:12px;
+          font-family:var(--mono);font-size:.7rem;color:var(--ink3)}
+  .legend span{display:flex;align-items:center;gap:7px}
+  .swatch{width:16px;height:3px;border-radius:2px;display:inline-block}
+
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(232px,1fr));gap:14px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+        padding:15px 17px;box-shadow:var(--shadow)}
+  .card h4{font-family:var(--mono);font-size:.66rem;letter-spacing:.13em;text-transform:uppercase;
+           color:var(--ink3);margin:0 0 7px;font-weight:500}
+  .card p{margin:0;font-size:.88rem;color:var(--ink2)}
+  .card .big{font-family:var(--cond);font-size:1.5rem;font-weight:700;color:var(--ink);
+             line-height:1.15;margin-bottom:4px}
+
+  .pill{font-family:var(--mono);font-size:.66rem;padding:2px 8px;border-radius:100px;
+        border:1px solid currentColor;white-space:nowrap}
+  .pill.ok{color:var(--fresh)} .pill.no{color:var(--spoiled)} .pill.warn{color:var(--warn)}
+
+  footer{grid-column:1/-1;border-top:1px solid var(--line);padding-top:22px;margin-top:16px;
+         color:var(--ink3);font-size:.83rem}
+</style>
+
+<div class="shell">
+
+  <header class="mast">
+    <div class="kicker">Build &amp; Wiring Manual</div>
+    <h1>FreshIQ</h1>
+    <p>A four-compartment rotating tray that photographs each compartment in turn and
+       classifies what it finds. One board does the vision and the web interface; a
+       stepper indexes the tray. This is how it goes together and why it is built this way.</p>
+    <div class="facts">
+      <span class="fact"><b>4</b> compartments</span>
+      <span class="fact"><b>250 &times; 250 &times; 275</b> mm</span>
+      <span class="fact"><b>12 V</b> &middot; 3 A</span>
+      <span class="fact"><b>8</b> foods &middot; 2 conditions</span>
+      <span class="fact"><b>160 px</b> model input</span>
+      <span class="fact"><b>10</b> printed parts</span>
+    </div>
+  </header>
+
+  <nav aria-label="Contents">
+    <div class="navlabel">Contents</div>
+    <ol>
+      <li><a href="#overview"><span class="n">01</span> How it works</a></li>
+      <li><a href="#bom"><span class="n">02</span> Parts list</a></li>
+      <li><a href="#power"><span class="n">03</span> Power</a></li>
+      <li><a href="#wiring"><span class="n">04</span> Wiring the driver</a></li>
+      <li><a href="#current"><span class="n">05</span> Motor current</a></li>
+      <li><a href="#steps"><span class="n">06</span> Steps &amp; indexing</a></li>
+      <li><a href="#optics"><span class="n">07</span> Camera &amp; light</a></li>
+      <li><a href="#stack"><span class="n">08</span> Mechanical stack</a></li>
+      <li><a href="#software"><span class="n">09</span> Software map</a></li>
+      <li><a href="#scan"><span class="n">10</span> The scan cycle</a></li>
+      <li><a href="#model"><span class="n">11</span> The model</a></li>
+      <li><a href="#api"><span class="n">12</span> HTTP API</a></li>
+      <li><a href="#run"><span class="n">13</span> Installing</a></li>
+      <li><a href="#trouble"><span class="n">14</span> When it breaks</a></li>
+      <li><a href="#limits"><span class="n">15</span> Honest limits</a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+    <!-- ============================================ 01 -->
+    <section id="overview">
+      <h2><span class="num">01</span> How it works</h2>
+      <p class="lede">Press <b>Start scan</b>. The tray turns one compartment, stops, waits for
+        the platter to settle, takes a photo, classifies it, saves the result, and repeats
+        until every compartment has an answer.</p>
+
+      <div class="figscroll">
+      <figure>
+        <svg viewBox="0 0 920 470" role="img" aria-label="System diagram: a 12 volt supply feeds the LED strip, the A4988 driver and the UNO Q; the UNO Q's STM32 microcontroller drives the A4988 which drives the NEMA 17 motor, while its Linux processor reads the USB camera.">
+          <defs>
+            <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+            </marker>
+            <marker id="ahp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="var(--power)"/>
+            </marker>
+            <marker id="aha" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/>
+            </marker>
+          </defs>
+
+          <!-- 12V supply -->
+          <rect x="24" y="206" width="112" height="66" rx="7" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <text x="80" y="234" text-anchor="middle" font-size="13" font-weight="600" fill="currentColor">12 V PSU</text>
+          <text x="80" y="252" text-anchor="middle" font-size="11" fill="currentColor" opacity=".75">3 A min</text>
+
+          <!-- power bus -->
+          <path d="M136 239 L176 239" stroke="var(--power)" stroke-width="2"/>
+          <path d="M176 66 L176 400" stroke="var(--power)" stroke-width="2"/>
+          <text x="186" y="60" font-size="10.5" fill="var(--power)" font-weight="600">12 V + GND bus</text>
+
+          <!-- taps -->
+          <path d="M176 88 L232 88" stroke="var(--power)" stroke-width="2" marker-end="url(#ahp)"/>
+          <path d="M176 196 L232 196" stroke="var(--power)" stroke-width="2" marker-end="url(#ahp)"/>
+          <path d="M176 386 L232 386" stroke="var(--power)" stroke-width="2" marker-end="url(#ahp)"/>
+
+          <!-- LED strip -->
+          <rect x="234" y="62" width="164" height="52" rx="7" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <text x="316" y="84" text-anchor="middle" font-size="12.5" font-weight="600" fill="currentColor">White LED strip</text>
+          <text x="316" y="101" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".75">always on, no control line</text>
+
+          <!-- A4988 -->
+          <rect x="234" y="152" width="164" height="92" rx="7" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <text x="316" y="178" text-anchor="middle" font-size="13" font-weight="600" fill="currentColor">A4988</text>
+          <text x="316" y="196" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".75">stepper driver</text>
+          <text x="316" y="222" text-anchor="middle" font-size="10.5" fill="var(--power)">VMOT 12 V</text>
+          <text x="316" y="236" text-anchor="middle" font-size="10.5" fill="var(--accent)">VDD 3.3 V</text>
+
+          <!-- UNO Q -->
+          <rect x="234" y="318" width="330" height="126" rx="9" fill="none" stroke="currentColor" stroke-width="1.7"/>
+          <text x="246" y="338" font-size="12.5" font-weight="600" fill="currentColor">Arduino UNO Q</text>
+          <rect x="248" y="350" width="140" height="46" rx="6" fill="none" stroke="currentColor" stroke-width="1" opacity=".7"/>
+          <text x="318" y="369" text-anchor="middle" font-size="11" fill="currentColor">Linux · Kryo</text>
+          <text x="318" y="384" text-anchor="middle" font-size="10" fill="currentColor" opacity=".7">vision + web</text>
+          <rect x="410" y="350" width="140" height="46" rx="6" fill="none" stroke="currentColor" stroke-width="1" opacity=".7"/>
+          <text x="480" y="369" text-anchor="middle" font-size="11" fill="currentColor">STM32U585</text>
+          <text x="480" y="384" text-anchor="middle" font-size="10" fill="currentColor" opacity=".7">real-time steps</text>
+          <path d="M390 373 L408 373" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#aha)" marker-start="url(#aha)"/>
+          <text x="399" y="418" text-anchor="middle" font-size="10" fill="var(--accent)">MessagePack-RPC</text>
+          <text x="399" y="431" text-anchor="middle" font-size="9.5" fill="currentColor" opacity=".65">arduino-router</text>
+
+          <!-- STM32 -> A4988 signal -->
+          <path d="M480 348 L480 288 L316 288 L316 246" stroke="var(--accent)" stroke-width="1.8" fill="none" marker-end="url(#aha)"/>
+          <text x="398" y="280" text-anchor="middle" font-size="10.5" fill="var(--accent)">STEP · DIR · EN — 3.3 V logic</text>
+
+          <!-- A4988 -> motor -->
+          <path d="M400 198 L470 198" stroke="currentColor" stroke-width="1.8" marker-end="url(#ah)"/>
+          <text x="435" y="190" text-anchor="middle" font-size="10" fill="currentColor">2 coils</text>
+          <rect x="472" y="166" width="126" height="66" rx="7" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <text x="535" y="192" text-anchor="middle" font-size="12.5" font-weight="600" fill="currentColor">NEMA 17</text>
+          <text x="535" y="209" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".75">1.8° · 200 steps</text>
+
+          <!-- motor -> tray -->
+          <path d="M600 199 L664 199" stroke="currentColor" stroke-width="1.8" marker-end="url(#ah)"/>
+          <text x="632" y="191" text-anchor="middle" font-size="10" fill="currentColor">1:1</text>
+          <rect x="666" y="160" width="128" height="78" rx="7" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <text x="730" y="188" text-anchor="middle" font-size="12.5" font-weight="600" fill="currentColor">Tray</text>
+          <text x="730" y="205" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".75">4 compartments</text>
+          <text x="730" y="221" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".75">50 steps each</text>
+
+          <!-- camera -->
+          <rect x="666" y="352" width="128" height="58" rx="7" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <text x="730" y="376" text-anchor="middle" font-size="12.5" font-weight="600" fill="currentColor">USB camera</text>
+          <text x="730" y="393" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".75">over the tray</text>
+          <path d="M664 381 L566 381" stroke="currentColor" stroke-width="1.8" marker-end="url(#ah)"/>
+          <text x="615" y="373" text-anchor="middle" font-size="10" fill="currentColor">USB</text>
+
+          <!-- camera sees tray -->
+          <path d="M730 350 L730 244" stroke="currentColor" stroke-width="1.2" stroke-dasharray="4 4" marker-end="url(#ah)"/>
+          <text x="742" y="300" font-size="10" fill="currentColor" opacity=".7">looks down</text>
+        </svg>
+        <div class="legend">
+          <span><i class="swatch" style="background:var(--power)"></i> 12 V power</span>
+          <span><i class="swatch" style="background:var(--accent)"></i> 3.3 V logic</span>
+          <span><i class="swatch" style="background:currentColor"></i> motor / data</span>
+        </div>
+        <figcaption><b>One board, two processors.</b> The UNO Q carries a Linux SoC and an
+          STM32 microcontroller joined by an internal UART, so there is no external serial
+          wiring — the driver connects straight to the 3.3 V header pins. That UART
+          (<code>/dev/ttyHS1</code>) is owned exclusively by the <code>arduino-router</code>
+          service, so Python reaches the MCU through the router's MessagePack-RPC socket, never
+          by opening the port. Linux runs the model and the dashboard; the STM32 does the step
+          timing, because Linux is not a real-time OS and a scheduler hiccup mid-step loses
+          steps silently.</figcaption>
+      </figure>
+      </div>
+    </section>
+
+    <!-- ============================================ 02 -->
+    <section id="bom">
+      <h2><span class="num">02</span> Parts list</h2>
+      <p class="lede">Everything outside the printed enclosure.</p>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Part</th><th>Spec</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><b>Arduino UNO Q</b></td><td>4 GB</td><td>Linux + STM32 on one board. 68.6 × 53.3 mm. <b>No barrel jack</b> — power arrives on the VIN header pin.</td></tr>
+            <tr><td><b>NEMA 17 stepper</b></td><td>17HS4401 class</td><td>42.3 mm frame, 40 mm body, Ø5 mm shaft, 1.8°/step, 200 steps/rev.</td></tr>
+            <tr><td><b>A4988 carrier</b></td><td>15.2 × 20.3 mm</td><td>Pololu-format. Check the sense resistors — see §5.</td></tr>
+            <tr><td><b>Coupling hub</b></td><td>Ø5 mm bore</td><td>Ø47 flange, 6 holes on 35 mm PCD, ~20 mm long. <b>Measure yours</b> — it sets the pedestal height.</td></tr>
+            <tr><td><b>Lazy-susan bearing</b></td><td>4 in square</td><td>101.6 mm plates, 7.94 mm thick, Ø57.15 mm access hole.</td></tr>
+            <tr><td><b>USB camera</b></td><td>1/4 in CMOS</td><td>UVC-compliant. Appears as <code>/dev/video0</code>.</td></tr>
+            <tr><td><b>12 V supply</b></td><td>3 A / 36 W</td><td>5.5 × 2.1 mm centre-positive.</td></tr>
+            <tr><td><b>White LED strip</b></td><td>12 V, ~0.5 m</td><td>Plain white. See §7 for why not RGB.</td></tr>
+            <tr><td><b>Capacitor</b></td><td>100 µF, ≥25 V</td><td class="num-col">Electrolytic. <b>Not optional</b> — see §4.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============================================ 03 -->
+    <section id="power">
+      <h2><span class="num">03</span> Power</h2>
+      <p class="lede">One 12 V supply feeds three things directly. There is no buck converter,
+        and you do not need one.</p>
+
+      <p>The UNO Q's VIN pin accepts <b>7–24 V</b> and has its own on-board buck that feeds the
+        5 V system rail. 12 V is inside that range, so it goes straight in. An external
+        step-down module would be a part that can fail for no benefit.</p>
+
+      <div class="cards">
+        <div class="card"><h4>Motor</h4><div class="big">~1.0 A</div><p>A4988 VMOT, at the current limit you set in §5.</p></div>
+        <div class="card"><h4>UNO Q</h4><div class="big">~1.0 A</div><p>Via VIN. Peaks during Wi-Fi bursts and model loading.</p></div>
+        <div class="card"><h4>LED strip</h4><div class="big">~0.6 A</div><p>0.5 m of 12 V 5050 at ~14 W/m.</p></div>
+        <div class="card"><h4>Headroom</h4><div class="big">3 A</div><p>Sized so nothing browns out when the motor starts.</p></div>
+      </div>
+
+      <div class="note stop">
+        <div class="t">Common ground</div>
+        <p>The A4988's logic ground and the UNO Q's ground <b>must</b> be joined. Without a shared
+          reference, STEP and DIR are voltages measured against nothing — the driver sees noise,
+          and the motor stutters or does nothing at all. Star the grounds at the supply.</p>
+      </div>
+    </section>
+
+    <!-- ============================================ 04 -->
+    <section id="wiring">
+      <h2><span class="num">04</span> Wiring the driver</h2>
+      <p class="lede">This is the diagram to get right. Three of these connections are the
+        classic ways an A4988 build fails silently.</p>
+
+      <div class="figscroll">
+      <figure>
+        <svg viewBox="0 0 900 560" role="img" aria-label="A4988 pinout: ENABLE, STEP and DIR go to UNO Q pins D5, D3 and D4; RESET and SLEEP are jumpered together; MS1 to MS3 are left open for full stepping; VMOT takes 12 volts with a 100 microfarad capacitor; VDD takes 3.3 volts; the four coil pins go to the NEMA 17.">
+          <defs>
+            <marker id="w-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+
+          <!-- chip body -->
+          <rect x="330" y="118" width="212" height="292" rx="8" fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <text x="436" y="102" text-anchor="middle" font-size="13.5" font-weight="600" fill="currentColor">A4988 carrier</text>
+
+          <!-- left pins -->
+          <g font-size="11.5" fill="currentColor">
+            <text x="344" y="152">ENABLE</text>
+            <text x="344" y="186">MS1</text>
+            <text x="344" y="220">MS2</text>
+            <text x="344" y="254">MS3</text>
+            <text x="344" y="288">RESET</text>
+            <text x="344" y="322">SLEEP</text>
+            <text x="344" y="356">STEP</text>
+            <text x="344" y="390">DIR</text>
+          </g>
+          <!-- right pins -->
+          <g font-size="11.5" fill="currentColor" text-anchor="end">
+            <text x="528" y="152">VMOT</text>
+            <text x="528" y="186">GND</text>
+            <text x="528" y="220">2B</text>
+            <text x="528" y="254">2A</text>
+            <text x="528" y="288">1A</text>
+            <text x="528" y="322">1B</text>
+            <text x="528" y="356">VDD</text>
+            <text x="528" y="390">GND</text>
+          </g>
+
+          <!-- left stubs + wires to MCU -->
+          <g stroke="var(--accent)" stroke-width="1.8" fill="none">
+            <path d="M330 148 L214 148"/>
+            <path d="M330 352 L214 352"/>
+            <path d="M330 386 L214 386"/>
+          </g>
+          <rect x="80" y="126" width="132" height="282" rx="7" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <text x="146" y="112" text-anchor="middle" font-size="12" font-weight="600" fill="currentColor">UNO Q · JDIGITAL</text>
+          <g font-size="11.5" fill="var(--accent)" text-anchor="end" font-weight="600">
+            <text x="200" y="152">D5</text>
+            <text x="200" y="356">D2</text>
+            <text x="200" y="390">D3</text>
+          </g>
+          <!-- Power and ground exit the BOTTOM edge. Routing them from the right
+               edge put two vertical wires straight through the space the MS1-3
+               annotation needs. -->
+          <text x="176" y="425" text-anchor="middle" font-size="11" fill="var(--accent)" font-weight="600">+3V3</text>
+          <text x="116" y="425" text-anchor="middle" font-size="11" fill="currentColor">GND</text>
+          <path d="M176 408 L176 444 L562 444 L562 352 L544 352"
+                stroke="var(--accent)" stroke-width="1.8" fill="none"/>
+          <text x="372" y="437" text-anchor="middle" font-size="10.5" fill="var(--accent)" font-weight="600">VDD from +3V3 — never +5 V</text>
+          <path d="M116 408 L116 478 L594 478 L594 386 L544 386"
+                stroke="currentColor" stroke-width="1.6" fill="none" opacity=".8"/>
+          <text x="372" y="493" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".8">logic ground — shared with the 12 V supply</text>
+
+          <!-- MS1-3 open -->
+          <g stroke="currentColor" stroke-width="1.2" stroke-dasharray="3 3" opacity=".55">
+            <path d="M330 182 L288 182"/><path d="M330 216 L288 216"/><path d="M330 250 L288 250"/>
+          </g>
+          <text x="278" y="212" text-anchor="end" font-size="10.5" fill="currentColor" opacity=".8">MS1–3 open</text>
+          <text x="278" y="227" text-anchor="end" font-size="10.5" fill="currentColor" opacity=".8">= full step</text>
+
+          <!-- RESET / SLEEP jumper -->
+          <path d="M330 284 L302 284 L302 318 L330 318" stroke="var(--danger)" stroke-width="2.2" fill="none"/>
+          <circle cx="302" cy="301" r="3.2" fill="var(--danger)"/>
+          <text x="290" y="305" text-anchor="end" font-size="10.5" fill="var(--danger)" font-weight="600">jumper</text>
+
+          <!-- VMOT + cap -->
+          <path d="M542 148 L662 148" stroke="var(--power)" stroke-width="2"/>
+          <text x="672" y="152" font-size="11.5" fill="var(--power)" font-weight="600">12 V</text>
+          <path d="M542 182 L620 182" stroke="currentColor" stroke-width="1.8"/>
+          <text x="630" y="186" font-size="11.5" fill="currentColor">GND</text>
+          <!-- capacitor across -->
+          <path d="M600 148 L600 165" stroke="var(--power)" stroke-width="1.6"/>
+          <path d="M588 165 L612 165" stroke="var(--power)" stroke-width="2.4"/>
+          <path d="M588 172 L612 172" stroke="currentColor" stroke-width="2.4"/>
+          <path d="M600 172 L600 182" stroke="currentColor" stroke-width="1.6"/>
+          <text x="622" y="164" font-size="10.5" fill="var(--power)" font-weight="600">100 µF</text>
+
+          <!-- coils -->
+          <g stroke="currentColor" stroke-width="1.8" fill="none">
+            <path d="M542 220 L700 220"/>
+            <path d="M542 254 L700 254"/>
+            <path d="M542 288 L700 288"/>
+            <path d="M542 322 L700 322"/>
+          </g>
+          <rect x="702" y="200" width="126" height="74" rx="6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <text x="765" y="226" text-anchor="middle" font-size="11.5" fill="currentColor">coil B</text>
+          <text x="765" y="244" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".75">blue · red</text>
+          <rect x="702" y="286" width="126" height="74" rx="6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <text x="765" y="312" text-anchor="middle" font-size="11.5" fill="currentColor">coil A</text>
+          <text x="765" y="330" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".75">black · green</text>
+          <text x="765" y="382" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".7">NEMA 17</text>
+        </svg>
+        <div class="legend">
+          <span><i class="swatch" style="background:var(--power)"></i> 12 V motor supply</span>
+          <span><i class="swatch" style="background:var(--accent)"></i> 3.3 V logic</span>
+          <span><i class="swatch" style="background:var(--danger)"></i> must be jumpered</span>
+        </div>
+        <figcaption><b>Every connection on the A4988.</b> Dashed stubs are pins deliberately left
+          unconnected. The red link between RESET and SLEEP is a wire you add yourself — it is not
+          a factory jumper.</figcaption>
+      </figure>
+      </div>
+
+      <h3>The three that bite</h3>
+
+      <div class="note stop">
+        <div class="t">1 — VDD must be 3.3 V, not 5 V</div>
+        <p>The A4988 reads logic HIGH at roughly <b>0.7 × VDD</b>. Powered from 5 V that threshold is
+          3.5 V, and the UNO Q's outputs only reach 3.3 V — so STEP is never reliably seen as HIGH.
+          The symptom is maddening: the motor twitches, or turns sometimes, or works until it
+          warms up. Powered from 3.3 V the threshold is 2.31 V and there is comfortable margin.</p>
+      </div>
+
+      <div class="note stop">
+        <div class="t">2 — RESET and SLEEP must be tied together</div>
+        <p>Both float by default, and a floating RESET holds the chip in reset forever. Nothing
+          moves and nothing is broken, so people replace working drivers over this. One wire
+          between the two pins fixes it.</p>
+      </div>
+
+      <div class="note stop">
+        <div class="t">3 — The 100 µF capacitor is not optional</div>
+        <p>It goes across VMOT and GND, physically close to the driver. The motor's inductance and
+          the supply leads form an LC circuit; connecting power without bulk capacitance produces a
+          voltage spike well beyond 12 V that destroys the A4988 outright. Fit it before the first
+          power-up, not after.</p>
+        <p>Related: <b>never unplug the motor while the driver is powered.</b> Same failure, same
+          result.</p>
+      </div>
+
+      <div class="scroll">
+        <table>
+          <thead><tr><th>A4988</th><th>Goes to</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td><code>STEP</code></td><td><b>D2</b></td><td>One pulse, one step. Set in the sketch.</td></tr>
+            <tr><td><code>DIR</code></td><td><b>D3</b></td><td>Rotation direction. Flip <code>DIRECTION</code> in the sketch if the tray turns the wrong way.</td></tr>
+            <tr><td><code>ENABLE</code></td><td><b>D5</b></td><td><b>Active LOW.</b> Driven HIGH between moves so the motor is not held energised and cooking.</td></tr>
+            <tr><td><code>VDD</code></td><td><b>+3V3</b></td><td>Logic supply. See gotcha 1.</td></tr>
+            <tr><td><code>GND</code> (logic)</td><td><b>GND</b></td><td>Shared reference.</td></tr>
+            <tr><td><code>VMOT</code></td><td><b>12 V</b></td><td>With the 100 µF capacitor across it.</td></tr>
+            <tr><td><code>GND</code> (motor)</td><td><b>12 V GND</b></td><td>Star back to the supply.</td></tr>
+            <tr><td><code>1A 1B</code></td><td><b>black, green</b></td><td>One coil.</td></tr>
+            <tr><td><code>2A 2B</code></td><td><b>red, blue</b></td><td>The other coil.</td></tr>
+            <tr><td><code>MS1 MS2 MS3</code></td><td><b>open</b></td><td>Full step. Internal pull-downs make open the default.</td></tr>
+            <tr><td><code>RESET</code> + <code>SLEEP</code></td><td><b>each other</b></td><td>See gotcha 2.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note warn">
+        <div class="t">Confirm the coil pairs</div>
+        <p>Wire colours vary between suppliers. Set a multimeter to continuity and probe pairs: the
+          two wires that beep are one coil. Getting this wrong makes the motor buzz and jitter
+          instead of turning.</p>
+      </div>
+    </section>
+
+    <!-- ============================================ 05 -->
+    <section id="current">
+      <h2><span class="num">05</span> Motor current</h2>
+      <p class="lede">Set this with a multimeter before the first move. Too high cooks the driver;
+        too low loses steps under the tray's inertia — and nothing in software can detect a lost step.</p>
+
+      <p>Turn the trimpot and measure between the pot's wiper and ground:</p>
+      <pre><code>V_ref = I_max × 8 × R_sense</code></pre>
+
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Sense resistors</th><th>Marked</th><th>V_ref for 1.0 A</th></tr></thead>
+          <tbody>
+            <tr><td>0.05 Ω</td><td><code>R050</code></td><td class="num-col">0.40 V</td></tr>
+            <tr><td>0.10 Ω</td><td><code>R100</code></td><td class="num-col">0.80 V</td></tr>
+            <tr><td>0.20 Ω</td><td><code>R200</code></td><td class="num-col">1.60 V</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>The two small resistors sit beside the chip and carry the marking. <b>1.0 A is a good
+        starting point</b> — the 17HS4401 is rated 1.68 A, but this tray is light and turns slowly,
+        and running cooler costs nothing here. If the tray stalls or skips, raise it in 0.1 A steps.</p>
+
+      <div class="note warn">
+        <div class="t">Heat</div>
+        <p>Above roughly 1 A the A4988 needs its heatsink and some airflow. The enclosure has side
+          vents for this. If the driver is too hot to touch, lower the current before doing anything
+          else.</p>
+      </div>
+    </section>
+
+    <!-- ============================================ 06 -->
+    <section id="steps">
+      <h2><span class="num">06</span> Steps &amp; indexing</h2>
+      <p class="lede">The drive is 1:1 — the coupling hub goes straight on the motor shaft, no
+        gearing — so one tray revolution is one motor revolution.</p>
+
+      <pre><code>steps_per_compartment = steps_per_revolution × microsteps ÷ compartments
+                      = 200 × 1 ÷ 4
+                      = 50</code></pre>
+
+      <p>Config validates this on startup and <b>refuses to run if it does not divide evenly</b>.
+        At 3 compartments you would get 66.67 steps and the tray would creep out of alignment a
+        little more every revolution — a fault that takes hours to notice and is invisible in a
+        single scan.</p>
+
+      <div class="note stop">
+        <div class="t">There is no position sensor</div>
+        <p>No home switch, no encoder, no index mark. Absolute tray position is <b>not physically
+          knowable</b>, so the software tracks a logical index that starts at compartment 1 when it
+          boots. <b>Turn the tray by hand so compartment 1 sits under the camera before your first
+          scan.</b></p>
+        <p>If the motor ever skips steps, software cannot tell — the result would be labelled with
+          the wrong compartment. That is a limitation of this hardware, not a bug. Correct it from
+          the dashboard or with <code>POST /api/motor/position</code>.</p>
+      </div>
+
+      <p>Moves always go <b>forward</b>, never taking the short way round. Going 3 → 2 turns three
+        compartments rather than reversing one, which keeps any mechanical backlash consistent so
+        every compartment lands the same way.</p>
+    </section>
+
+    <!-- ============================================ 07 -->
+    <section id="optics">
+      <h2><span class="num">07</span> Camera &amp; light</h2>
+      <p class="lede">The model judges food largely by colour. Everything here exists to make the
+        light boring and identical from one compartment to the next.</p>
+
+      <h3>Why plain white, always on</h3>
+      <p>The strip is wired straight to 12 V with no control line. That is deliberate: a strip that
+        cannot be changed cannot drift. Use <b>white only</b> — an RGB strip set to "warm" shifts
+        every hue the classifier depends on, and a red-tinted tomato and a red-tinted apple are a
+        much harder problem than they need to be.</p>
+      <p>Aim for even, diffuse light with no hotspots. A strip around the inside of the enclosure
+        rim, pointed at the tray rather than at the camera, avoids both glare and hard shadows.</p>
+
+      <h3>Camera geometry</h3>
+      <div class="cards">
+        <div class="card"><h4>Lens height</h4><div class="big">150 mm</div><p>Above the tray floor.</p></div>
+        <div class="card"><h4>Field needed</h4><div class="big">52.2°</div><p>To cover one 90° compartment. Almost any module clears this.</p></div>
+        <div class="card"><h4>Tilt</h4><div class="big">±20°</div><p>Five detents at −20/−10/0/+10/+20.</p></div>
+        <div class="card"><h4>Aim point</h4><div class="big">r = 60.4</div><p>mm from centre — the compartment centroid.</p></div>
+      </div>
+      <p>The bracket uses discrete detent holes rather than a friction slot. A 3.4 mm slot through a
+        3 mm printed arm is a layer-delamination line waiting to split, it creeps under vibration
+        once the clamp relaxes, and you cannot return to the same angle twice.</p>
+    </section>
+
+    <!-- ============================================ 08 -->
+    <section id="stack">
+      <h2><span class="num">08</span> Mechanical stack</h2>
+      <p class="lede">The vertical arrangement is the least obvious part of the build, because one
+        component forces an addition you would not otherwise think to make.</p>
+
+      <div class="figscroll">
+      <figure>
+        <svg viewBox="0 0 760 430" role="img" aria-label="Cross-section of the vertical stack: base floor at 0 to 3 millimetres, motor hanging 5 to 45, deck 45 to 50, pedestal ring 50 to 64, lazy-susan bearing 64 to 72, coupling hub 52 to 72, tray carrier 72 to 86 and food insert 78 to 116.">
+          <defs>
+            <marker id="s-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+          <!-- scale: z mm -> y  (y = 390 - z*2.6) -->
+          <!-- base floor 0-3 -->
+          <rect x="120" y="382" width="420" height="8" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <text x="552" y="390" font-size="11" fill="currentColor">base floor · 0–3</text>
+
+          <!-- motor 5-45 -->
+          <rect x="286" y="273" width="88" height="104" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <text x="330" y="330" text-anchor="middle" font-size="11" fill="currentColor">motor</text>
+          <text x="552" y="330" font-size="11" fill="currentColor">NEMA 17 · 5–45</text>
+
+          <!-- deck 45-50 -->
+          <rect x="120" y="260" width="420" height="13" fill="none" stroke="currentColor" stroke-width="1.6"/>
+          <text x="552" y="271" font-size="11" fill="currentColor">deck · 45–50</text>
+
+          <!-- pedestal 50-64 -->
+          <rect x="222" y="224" width="46" height="36" fill="none" stroke="var(--accent)" stroke-width="1.8"/>
+          <rect x="392" y="224" width="46" height="36" fill="none" stroke="var(--accent)" stroke-width="1.8"/>
+          <text x="552" y="248" font-size="11" fill="var(--accent)" font-weight="600">pedestal · 50–64.06</text>
+
+          <!-- bearing 64-72 -->
+          <rect x="196" y="203" width="268" height="21" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <text x="330" y="218" text-anchor="middle" font-size="10.5" fill="currentColor">lazy-susan bearing</text>
+          <text x="552" y="219" font-size="11" fill="currentColor">bearing · 64–72</text>
+
+          <!-- hub 52-72 -->
+          <rect x="306" y="203" width="48" height="52" fill="none" stroke="var(--power)" stroke-width="1.6"/>
+          <text x="552" y="200" font-size="11" fill="var(--power)">coupling hub · 52–72</text>
+
+          <!-- carrier 72-86 -->
+          <rect x="150" y="167" width="360" height="36" fill="none" stroke="currentColor" stroke-width="1.6"/>
+          <text x="330" y="190" text-anchor="middle" font-size="11" fill="currentColor">tray carrier</text>
+          <text x="552" y="180" font-size="11" fill="currentColor">carrier · 72–86</text>
+
+          <!-- insert 78-116 -->
+          <rect x="158" y="88" width="344" height="99" fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <text x="330" y="132" text-anchor="middle" font-size="12" font-weight="600" fill="currentColor">food insert — lifts out</text>
+          <text x="330" y="150" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".7">4 compartments · 70.2 cm² each</text>
+          <text x="552" y="105" font-size="11" fill="currentColor">insert · 78–116</text>
+
+          <!-- dimension line for pedestal -->
+          <path d="M100 224 L100 260" stroke="var(--accent)" stroke-width="1.2" marker-start="url(#s-ah)" marker-end="url(#s-ah)"/>
+          <text x="92" y="246" text-anchor="end" font-size="10.5" fill="var(--accent)" font-weight="600">14.06</text>
+
+          <!-- axis -->
+          <path d="M64 88 L64 390" stroke="currentColor" stroke-width="1" opacity=".45"/>
+          <text x="58" y="94" text-anchor="end" font-size="10" fill="currentColor" opacity=".7">116</text>
+          <text x="58" y="264" text-anchor="end" font-size="10" fill="currentColor" opacity=".7">45</text>
+          <text x="58" y="392" text-anchor="end" font-size="10" fill="currentColor" opacity=".7">0 mm</text>
+        </svg>
+        <div class="legend">
+          <span><i class="swatch" style="background:var(--accent)"></i> the part that solves it</span>
+          <span><i class="swatch" style="background:var(--power)"></i> coupling hub</span>
+        </div>
+        <figcaption><b>The pedestal exists because of the hub.</b> The coupling hub is ~20 mm long
+          and has to both grip the shaft and bolt up to the tray, but the bearing is only 7.94 mm
+          thick. Mounting both flat to the deck makes the hub collide with the motor face. A
+          14.06 mm ring lifts the bearing so its top plate lands exactly at the hub flange — and
+          the hub then lives inside the bearing's Ø57.15 mm access hole, which the Ø47 flange
+          clears.</figcaption>
+      </figure>
+      </div>
+    </section>
+
+    <!-- ============================================ 09 -->
+    <section id="software">
+      <h2><span class="num">09</span> Software map</h2>
+      <p class="lede">One Python process serves the API, the dashboard and the scan controller.
+        No separate frontend server, no broker, no database daemon.</p>
+
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Path</th><th>Does</th></tr></thead>
+          <tbody>
+            <tr><td><code>config/freshiq.json</code></td><td>Everything about <b>this rig</b>: compartments, port, camera, delays, retention.</td></tr>
+            <tr><td><code>hardware/motor.py</code></td><td>Tray movement. Router-RPC, external-serial and simulated drivers behind one interface.</td></tr>
+            <tr><td><code>hardware/router_bridge.py</code></td><td>MessagePack-RPC to the UNO Q's on-board MCU via <code>arduino-router</code>.</td></tr>
+            <tr><td><code>hardware/lighting.py</code></td><td>Reports the hardwired strip honestly; refuses to pretend it can dim.</td></tr>
+            <tr><td><code>backend/scan.py</code></td><td>The state machine. <b>Owns the compartment index.</b></td></tr>
+            <tr><td><code>backend/server.py</code></td><td>HTTP: API + dashboard. Standard library only.</td></tr>
+            <tr><td><code>backend/dashboard.html</code></td><td>The UI, including the compartment grid.</td></tr>
+            <tr><td><code>ai/quality_check.py</code></td><td>Rejects unusable frames before the model ever sees them.</td></tr>
+            <tr><td><code>ai/multihead.py</code></td><td>Runs the two-head TFLite model.</td></tr>
+            <tr><td><code>ai/aggregation.py</code></td><td>Combines several views of <b>one</b> item — worst view wins.</td></tr>
+            <tr><td><code>camera/capture.py</code></td><td>USB capture.</td></tr>
+            <tr><td><code>firmware/freshiq_tray/</code></td><td>The MCU sketch.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note">
+        <div class="t">Why the scan controller exists</div>
+        <p><code>ai.inspect()</code> merges N images into <b>one</b> verdict. That is right for four
+          photos of one tomato and wrong for four compartments holding four different foods — it
+          would average a fresh apple and a rotten banana into a single answer. The scan controller
+          inverts the loop: it calls <code>inspect()</code> once <b>per compartment</b>. The AI
+          package itself is unmodified.</p>
+      </div>
+    </section>
+
+    <!-- ============================================ 10 -->
+    <section id="scan">
+      <h2><span class="num">10</span> The scan cycle</h2>
+
+      <div class="figscroll">
+      <figure>
+        <svg viewBox="0 0 880 300" role="img" aria-label="Scan state machine: idle leads to moving, stabilizing, capturing, analyzing and saving, then loops back to moving for the next compartment or finishes at complete; errors and cancellation both route through safe stop.">
+          <defs>
+            <marker id="f-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+            </marker>
+            <marker id="f-ahd" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="var(--danger)"/>
+            </marker>
+          </defs>
+
+          <g font-size="11.5" fill="currentColor" text-anchor="middle">
+            <rect x="16" y="96" width="92" height="46" rx="6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+            <text x="62" y="124">IDLE</text>
+
+            <rect x="150" y="96" width="104" height="46" rx="6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+            <text x="202" y="118">MOVING</text>
+            <text x="202" y="133" font-size="9.5" opacity=".7">waits for OK</text>
+
+            <rect x="288" y="96" width="118" height="46" rx="6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+            <text x="347" y="118">STABILIZING</text>
+            <text x="347" y="133" font-size="9.5" opacity=".7">1.2 s settle</text>
+
+            <rect x="440" y="96" width="106" height="46" rx="6" fill="none" stroke="var(--accent)" stroke-width="1.8"/>
+            <text x="493" y="118" fill="var(--accent)">CAPTURING</text>
+            <text x="493" y="133" font-size="9.5" fill="var(--accent)" opacity=".8">tray still</text>
+
+            <rect x="580" y="96" width="104" height="46" rx="6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+            <text x="632" y="124">ANALYZING</text>
+
+            <rect x="718" y="96" width="92" height="46" rx="6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+            <text x="764" y="124">SAVING</text>
+
+            <rect x="580" y="222" width="104" height="42" rx="6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+            <text x="632" y="248">COMPLETE</text>
+
+            <rect x="288" y="222" width="118" height="42" rx="6" fill="none" stroke="var(--danger)" stroke-width="1.6"/>
+            <text x="347" y="248" fill="var(--danger)">SAFE_STOP</text>
+          </g>
+
+          <g stroke="currentColor" stroke-width="1.6" fill="none" marker-end="url(#f-ah)">
+            <path d="M110 119 L148 119"/>
+            <path d="M256 119 L286 119"/>
+            <path d="M408 119 L438 119"/>
+            <path d="M548 119 L578 119"/>
+            <path d="M686 119 L716 119"/>
+          </g>
+          <text x="129" y="110" text-anchor="middle" font-size="9.5" fill="currentColor">start</text>
+
+          <!-- loop back -->
+          <path d="M764 144 L764 190 L202 190 L202 144" stroke="currentColor" stroke-width="1.6"
+                fill="none" marker-end="url(#f-ah)"/>
+          <text x="483" y="184" text-anchor="middle" font-size="10" fill="currentColor">next compartment</text>
+
+          <!-- to complete -->
+          <path d="M764 190 L764 243 L686 243" stroke="currentColor" stroke-width="1.6" fill="none" marker-end="url(#f-ah)"/>
+          <text x="742" y="214" text-anchor="middle" font-size="9.5" fill="currentColor">last</text>
+
+          <!-- complete -> idle -->
+          <path d="M578 243 L110 243 L110 144" stroke="currentColor" stroke-width="1.4" fill="none"
+                opacity=".75" marker-end="url(#f-ah)"/>
+
+          <!-- error paths -->
+          <path d="M493 144 L493 208 L406 208 L406 235" stroke="var(--danger)" stroke-width="1.6"
+                fill="none" stroke-dasharray="5 4" marker-end="url(#f-ahd)"/>
+          <text x="470" y="204" text-anchor="end" font-size="9.5" fill="var(--danger)">error / stop</text>
+          <path d="M288 243 L110 243" stroke="var(--danger)" stroke-width="1.6" fill="none"
+                stroke-dasharray="5 4" marker-end="url(#f-ahd)"/>
+          <text x="200" y="236" text-anchor="middle" font-size="9.5" fill="var(--danger)">motor off</text>
+        </svg>
+        <div class="legend">
+          <span><i class="swatch" style="background:var(--accent)"></i> the only moment the shutter opens</span>
+          <span><i class="swatch" style="background:var(--danger)"></i> failure &amp; cancel</span>
+        </div>
+        <figcaption><b>The tray is never moving while a photo is taken.</b> <code>move_to()</code>
+          blocks until the microcontroller replies <code>OK</code>, and only then does the settle
+          delay run — the motor stopping is not the same as a 200 mm loaded platter having stopped
+          wobbling. Every exit, including cancellation, passes through <code>SAFE_STOP</code>, so no
+          exception can leave a stepper energised.</figcaption>
+      </figure>
+      </div>
+    </section>
+
+    <!-- ============================================ 11 -->
+    <section id="model">
+      <h2><span class="num">11</span> The model</h2>
+      <p class="lede">MobileNetV2 with two output heads, exported to TFLite and run through LiteRT.
+        Verified against the actual tensors, not the docs.</p>
+
+      <div class="figscroll">
+      <figure>
+        <svg viewBox="0 0 860 210" role="img" aria-label="Inference pipeline: a BGR frame passes a quality gate, is converted to 160 pixel RGB, runs through the network which splits into a condition head and a food head, and is aggregated into one per-compartment result.">
+          <defs>
+            <marker id="m-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+          <g font-size="11.5" fill="currentColor" text-anchor="middle">
+            <rect x="14" y="80" width="98" height="46" rx="6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+            <text x="63" y="101">BGR frame</text>
+            <text x="63" y="116" font-size="9.5" opacity=".7">1280×720</text>
+
+            <rect x="150" y="80" width="112" height="46" rx="6" fill="none" stroke="var(--warn)" stroke-width="1.6"/>
+            <text x="206" y="101" fill="var(--warn)">quality gate</text>
+            <text x="206" y="116" font-size="9.5" fill="var(--warn)" opacity=".85">reject or pass</text>
+
+            <rect x="300" y="80" width="112" height="46" rx="6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+            <text x="356" y="101">preprocess</text>
+            <text x="356" y="116" font-size="9.5" opacity=".7">RGB 160² ÷255</text>
+
+            <rect x="450" y="66" width="106" height="74" rx="6" fill="none" stroke="currentColor" stroke-width="1.6"/>
+            <text x="503" y="98">MobileNetV2</text>
+            <text x="503" y="114" font-size="9.5" opacity=".7">two heads</text>
+
+            <rect x="600" y="46" width="112" height="40" rx="6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+            <text x="656" y="63" font-size="10.5">condition · 2</text>
+            <text x="656" y="77" font-size="9.5" opacity=".7">fresh / spoiled</text>
+
+            <rect x="600" y="120" width="112" height="40" rx="6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+            <text x="656" y="137" font-size="10.5">food · 8</text>
+            <text x="656" y="151" font-size="9.5" opacity=".7">apple … tomato</text>
+
+            <rect x="748" y="80" width="98" height="46" rx="6" fill="none" stroke="var(--accent)" stroke-width="1.8"/>
+            <text x="797" y="101" fill="var(--accent)">result</text>
+            <text x="797" y="116" font-size="9.5" fill="var(--accent)" opacity=".8">+ compartment</text>
+          </g>
+          <g stroke="currentColor" stroke-width="1.6" fill="none" marker-end="url(#m-ah)">
+            <path d="M114 103 L148 103"/>
+            <path d="M264 103 L298 103"/>
+            <path d="M414 103 L448 103"/>
+            <path d="M558 92 L598 68"/>
+            <path d="M558 114 L598 138"/>
+            <path d="M714 66 L740 92"/>
+            <path d="M714 140 L740 114"/>
+          </g>
+          <path d="M206 78 L206 40 L360 40" stroke="var(--warn)" stroke-width="1.5" fill="none"
+                stroke-dasharray="5 4" marker-end="url(#m-ah)"/>
+          <text x="372" y="44" font-size="10" fill="var(--warn)" text-anchor="start">blurred · too dark · multiple objects → no model run</text>
+        </svg>
+        <figcaption><b>Bad frames never reach the model.</b> The gate rejects them with a named
+          reason, so you get "blurred" instead of a confident guess about a photo of nothing.</figcaption>
+      </figure>
+      </div>
+
+      <div class="cards">
+        <div class="card"><h4>Input</h4><div class="big">160 × 160</div><p>RGB float32 in [0,1]. Verified from the input tensor.</p></div>
+        <div class="card"><h4>Outputs</h4><div class="big">2 and 8</div><p>Condition and food. Neither head is quantised.</p></div>
+        <div class="card"><h4>Size</h4><div class="big">2.72 MB</div><p><code>freshiq_model.tflite</code>.</p></div>
+        <div class="card"><h4>Runtime</h4><div class="big">LiteRT</div><p><code>ai-edge-litert</code>. No TensorFlow on the board.</p></div>
+      </div>
+
+      <h3>What it actually knows</h3>
+      <p><b>Eight foods:</b> apple, banana, cucumber, mango, okra, orange, potato, tomato.
+         <b>Two conditions:</b> fresh, spoiled.</p>
+      <p>Anything else gets forced into one of those eight — the model cannot say "I have not seen
+        this". Feed it a pear and you will get a confident wrong answer.</p>
+
+      <div class="note stop">
+        <div class="t">Preprocessing must not be changed</div>
+        <p>BGR → RGB, resize to 160, divide by 255. The model applies its own rescaling internally.
+          A mismatch between training and deployment preprocessing does not throw an error — it
+          quietly destroys accuracy while everything still looks like it is working.</p>
+      </div>
+    </section>
+
+    <!-- ============================================ 12 -->
+    <section id="api">
+      <h2><span class="num">12</span> HTTP API</h2>
+      <p class="lede">Bound to <code>0.0.0.0:8000</code> so phones and laptops on the same Wi-Fi
+        can reach it.</p>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Method</th><th>Path</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td><code>POST</code></td><td><code>/api/scan/start</code></td><td>Scan every compartment. Optional <code>{"compartments":[2,4]}</code>.</td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/scan/stop</code></td><td>Cancel. Motor stops immediately.</td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/scan/compartment</code></td><td>One compartment, synchronous.</td></tr>
+            <tr><td><code>GET</code></td><td><code>/api/scan/status</code></td><td>State, progress, results so far.</td></tr>
+            <tr><td><code>GET</code></td><td><code>/api/system/status</code></td><td>One call: AI, camera, tray, lighting, mode.</td></tr>
+            <tr><td><code>GET</code></td><td><code>/api/motor/status</code></td><td>Position, moving, connected.</td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/motor/position</code></td><td>Correct the index after realigning by hand.</td></tr>
+            <tr><td><code>GET</code></td><td><code>/api/snapshot</code></td><td>Current frame as JPEG.</td></tr>
+            <tr><td><code>GET</code></td><td><code>/api/history</code></td><td>Past inspections, newest first.</td></tr>
+            <tr><td><code>GET</code></td><td><code>/api/export.csv</code></td><td>Everything as CSV.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>One result</h3>
+      <pre><code>{
+  "status": "ok",
+  "compartment": 2,
+  "food": "tomato",
+  "food_confidence": 0.97,
+  "condition": "fresh",
+  "condition_confidence": 0.96,
+  "image_quality": "good",
+  "evidence": [],
+  "timestamp": "2026-08-23T05:43:52+00:00"
+}</code></pre>
+      <p><code>compartment</code> comes from the scan controller, never from the model. Results are
+        appended to <code>data/inspections.jsonl</code> — one JSON object per line, which survives a
+        power cut mid-write (you lose at most the last line) and needs no schema migration.</p>
+    </section>
+
+    <!-- ============================================ 13 -->
+    <section id="run">
+      <h2><span class="num">13</span> Installing</h2>
+      <p class="lede">Copy the folder to the board and run one thing.</p>
+      <pre><code>./START.sh</code></pre>
+      <p>First run installs the system libraries and Python packages, verifies the imports actually
+        work, adds you to the <code>dialout</code> group, creates the data folders, then starts and
+        prints the address. Every run after that just starts.</p>
+
+      <pre><code>./INSTALL_SERVICE.sh</code></pre>
+      <p>Starts on boot, restarts on crash. Watch it with <code>journalctl -u freshiq -f</code>.</p>
+
+      <h3>Without any hardware</h3>
+      <pre><code>./START.sh --dev</code></pre>
+      <p>Simulated motor, sample photos instead of a camera, everything else real. The whole scan
+        flow and dashboard work on a laptop with nothing plugged in.</p>
+
+      <div class="note warn">
+        <div class="t">Network exposure</div>
+        <p>There is <b>no authentication</b>. Anyone on your Wi-Fi can open the dashboard and drive
+          the tray. Fine for a LAN prototype; <b>do not port-forward it</b>. For remote access use a
+          private tunnel such as Tailscale, which exposes nothing publicly.</p>
+      </div>
+    </section>
+
+    <!-- ============================================ 14 -->
+    <section id="trouble">
+      <h2><span class="num">14</span> When it breaks</h2>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr></thead>
+          <tbody>
+            <tr><td>Motor hums, will not turn</td><td>Coil pairs swapped</td><td>Meter for continuity; the pair that beeps is one coil</td></tr>
+            <tr><td>Nothing moves, nothing hot</td><td>RESET floating</td><td>Jumper RESET to SLEEP</td></tr>
+            <tr><td>Turns sometimes / erratic</td><td><b>VDD on 5 V</b></td><td>Move VDD to +3V3</td></tr>
+            <tr><td>Skips steps under load</td><td>Current too low</td><td>Raise V_ref 0.1 A at a time</td></tr>
+            <tr><td>Driver very hot</td><td>Current too high</td><td>Lower V_ref; check the heatsink</td></tr>
+            <tr><td>Driver died on power-up</td><td>No bulk capacitor</td><td>Fit 100 µF across VMOT. The driver is gone.</td></tr>
+            <tr><td>Everything <code>blurred</code></td><td>Threshold tuned for a rig camera</td><td><code>./START.sh --min-focus 20</code></td></tr>
+            <tr><td>Backend says <code>heuristic</code></td><td>Model missing</td><td><code>models/</code> is gitignored — copy the <code>.tflite</code></td></tr>
+            <tr><td><code>camera.mode: demo</code></td><td>No <code>/dev/video*</code></td><td>Replug; <code>sudo fuser -v /dev/video0</code></td></tr>
+            <tr><td><code>scan_unavailable</code> on an UNO Q</td><td>Router driver not selected</td><td>Set <code>"driver": "auto"</code>; check <code>systemctl status arduino-router</code></td></tr>
+            <tr><td>Serial permission denied (external board only)</td><td>Not in <code>dialout</code></td><td><code>sudo usermod -aG dialout $USER</code>, then log out</td></tr>
+            <tr><td>Wrong compartment reported</td><td>Lost steps or misalignment</td><td>Realign by hand; raise current; slow the ramp</td></tr>
+            <tr><td><code>libGL.so.1</code> missing</td><td>OpenCV system deps</td><td><code>sudo apt install -y libgl1 libglib2.0-0</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============================================ 15 -->
+    <section id="limits">
+      <h2><span class="num">15</span> Honest limits</h2>
+      <p class="lede">Read this before showing anyone a number.</p>
+
+      <div class="note stop">
+        <div class="t">This is not a food-safety device</div>
+        <p>The percentages are the model's <b>classification confidence</b>, not a measurement.
+          "Fresh classification: 96% confidence" does not mean the food is 96% fresh, and it says
+          nothing about whether anything is safe to eat. There is no chemistry here — only the
+          appearance of the surface facing a camera.</p>
+      </div>
+
+      <table>
+        <tbody>
+          <tr><td><span class="pill no">no</span></td><td><b>Position feedback.</b> No home switch or encoder. Lost steps are undetectable.</td></tr>
+          <tr><td><span class="pill no">no</span></td><td><b>Object detection.</b> One item per compartment. Two foods together gets you <code>multiple_objects</code>, not two answers.</td></tr>
+          <tr><td><span class="pill no">no</span></td><td><b>Unknown-food rejection.</b> Anything outside the eight classes is forced into one of them.</td></tr>
+          <tr><td><span class="pill no">no</span></td><td><b>Interior assessment.</b> Surface appearance only. A perfect-looking fruit can be rotten inside.</td></tr>
+          <tr><td><span class="pill warn">note</span></td><td><b>Domain gap.</b> Trained on web photos of supermarket produce, not photos from this rig. It will do worse here than its test score suggests.</td></tr>
+          <tr><td><span class="pill warn">note</span></td><td><b>FDM prints are not food-safe.</b> Layer lines trap bacteria and survive washing. The tray is for whole uncut fruit; hand-wash cool, never a dishwasher.</td></tr>
+          <tr><td><span class="pill ok">yes</span></td><td><b>Bad frames are refused</b> rather than guessed at, with a named reason.</td></tr>
+          <tr><td><span class="pill ok">yes</span></td><td><b>The tray fails safe.</b> Every error path de-energises the motor.</td></tr>
+        </tbody>
+      </table>
+
+      <p>The dashboard's <b>Teach it your setup</b> panel collects photos from your actual camera and
+        lighting. That is the single highest-value thing you can do to close the domain gap.</p>
+    </section>
+
+  </main>
+
+  <footer>
+    FreshIQ build manual · 4 compartments · 70.2 cm² each · 12 V · 8 foods, 2 conditions.
+    Dimensions measured from the built CAD geometry; model specifications read from the
+    deployed <code>.tflite</code> tensors.
+  </footer>
+
+</div>

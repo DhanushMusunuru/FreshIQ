@@ -1,0 +1,53 @@
+{
+  "_comment": "DEVELOPMENT config. Same file shape as freshiq.json, but nothing physical is required: the motor is simulated and the camera falls back to sample_data/ when none is found. Use it to work on the dashboard, the scan flow or the API on a laptop.  Run with:  python backend/server.py --config config/freshiq.development.json",
+
+  "device_id": "freshiq-dev",
+  "mode": "development",
+
+  "tray": {
+    "compartments": 4,
+    "steps_per_revolution": 200,
+    "microsteps": 1,
+    "stabilize_seconds": 0.2,
+    "_stabilize_seconds": "Short on purpose - there is no real platter to settle, and waiting 1.2 s per compartment makes UI work tedious.",
+    "seconds_per_compartment": 3.5,
+    "_seconds_per_compartment": "How long ONE compartment of travel should take. The MCU is told a per-step delay derived from this and steps_per_compartment, so changing the speed is a config edit and a restart - no re-flash. Raise it for a gentler tray, lower it for a faster scan. Must stay below motor.ack_timeout_seconds.",
+
+    "move_timeout_seconds": 20.0
+  },
+
+  "motor": {
+    "driver": "simulated",
+    "port": "",
+    "baud": 115200,
+    "ack_timeout_seconds": 15.0
+  },
+
+  "camera": {
+    "index": 0,
+    "width": 1280,
+    "height": 720,
+    "warmup_frames": 5,
+    "views_per_compartment": 1,
+    "inter_view_delay_seconds": 0.1
+  },
+
+  "lighting": {
+    "mode": "none",
+    "_mode": "No enclosure on a desk. Reports honestly so the dashboard shows the colour-consistency warning rather than implying controlled lighting."
+  },
+
+  "server": {
+    "host": "127.0.0.1",
+    "_host": "Loopback only in development - do not expose a dev box to the LAN.",
+    "port": 8000
+  },
+
+  "storage": {
+    "history_file": "data/inspections.jsonl",
+    "save_images": false,
+    "image_dir": "data/inspections",
+    "retention_days": 7,
+    "max_images": 200
+  }
+}
