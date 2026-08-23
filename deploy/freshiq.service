@@ -1,0 +1,60 @@
+# FreshIQ systemd unit — starts the rig automatically when the UNO Q boots.
+#
+# Install:
+#   sudo cp deploy/freshiq.service /etc/systemd/system/freshiq.service
+#   sudo sed -i "s/YOUR_USER/$USER/g; s#/home/YOUR_USER/FreshIQ#$PWD#g" \
+#        /etc/systemd/system/freshiq.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now freshiq
+#
+# Manage:
+#   sudo systemctl status freshiq     is it up
+#   sudo systemctl restart freshiq    after changing config
+#   sudo systemctl stop freshiq       stop it
+#   journalctl -u freshiq -f          watch the log live
+#   journalctl -u freshiq -n 200      last 200 lines
+
+[Unit]
+Description=FreshIQ food inspection station
+# The dashboard binds 0.0.0.0, which fails if it starts before the network is
+# configured. network-online is stricter than network.target and is what you
+# want here.
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=YOUR_USER
+Group=YOUR_USER
+WorkingDirectory=/home/YOUR_USER/FreshIQ
+ExecStart=/home/YOUR_USER/FreshIQ/start_freshiq.sh
+
+# The camera and the serial port both live in these groups. Without them the
+# service starts and then fails at the first frame or the first tray move.
+SupplementaryGroups=dialout video
+
+Restart=always
+RestartSec=5
+# Give up only if it crashes 5 times in a minute - that is a real fault, not a
+# transient. Without this a crash-loop restarts forever and floods the journal.
+StartLimitBurst=5
+StartLimitIntervalSec=60
+
+# Unbuffered so journalctl -f shows scan progress as it happens.
+Environment=PYTHONUNBUFFERED=1
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=freshiq
+
+# --- modest hardening -----------------------------------------------------
+# Not a lockdown: the service needs its own directory, the camera and a serial
+# port. These just stop it wandering anywhere else.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/home/YOUR_USER/FreshIQ/data
+
+[Install]
+WantedBy=multi-user.target

@@ -162,3 +162,106 @@ rpc.call("tray_rotate", 50)  ->  tray_rotate(50)   turns one compartment
 
 The call returns only once the motor has stopped, so the camera can never
 photograph a moving tray.
+
+---
+
+## Two backends, one interface
+
+FreshIQ works **immediately, with no training**, and gets better once you train
+on your own data:
+
+| Backend | Needs training? | Dependencies | Use it for |
+|---|---|---|---|
+| **Heuristic** (classical OpenCV) | No | `opencv`, `numpy` | Day-one pipeline, edge fallback, baseline |
+| **TFLite** (MobileNetV2) | Yes | `tflite-runtime` | The real classifier on the UNO Q / edge |
+| **Keras** (MobileNetV2) | Yes | `tensorflow` | Training + dev-machine inference |
+
+The backend is auto-selected: if a trained model is present it is used, otherwise
+the heuristic backend runs. Your calling code never changes.
+
+---
+
+## The dashboard
+
+The rig serves its own web interface. Run this on the UNO Q (or your laptop):
+
+```bash
+./start_freshiq.sh
+```
+
+Then open `http://<board-ip>:8000` from any device on the same network. Live tray
+view, an Inspect button, the verdict with confidence and evidence, a history
+table, stats and CSV export.
+
+**No camera? It still runs.** The server drops into demo mode and inspects the
+bundled sample photos, so you can build against it before any hardware exists.
+
+### Scanning the tray
+
+Press **Start scan** and the rig walks every compartment:
+
+```
+MOVING -> STABILIZING -> CAPTURING -> ANALYZING -> SAVING -> next
+```
+
+The tray is stationary for every photo. `motor.move_to()` blocks until the MCU
+replies `OK`, and only then does a configurable settle delay run
+(`tray.stabilize_seconds`) — the motor stopping is not the same as a 200 mm
+loaded platter having stopped wobbling.
+
+| Method | Path | Purpose |
+|---|---|---|
+| POST | `/api/scan/start` | scan every compartment (optionally `{"compartments":[2,4]}`) |
+| POST | `/api/scan/stop` | cancel; the motor stops immediately |
+| POST | `/api/scan/compartment` | `{"compartment":3}` — one compartment, synchronous |
+| GET | `/api/scan/status` | state machine, progress, all results so far |
+| GET | `/api/scan/results` | just the per-compartment results |
+| GET | `/api/motor/status` | position, moving, connected |
+| POST | `/api/motor/position` | correct the logical position after realigning by hand |
+| GET | `/api/system/status` | one call: AI, camera, tray, lighting, mode |
+
+**The compartment number never comes from the AI.** The scan controller knows
+where the tray was pointing; the model only answers "what is in this picture".
+
+### Things worth knowing before you trust it
+
+- **No home sensor exists.** Absolute tray position is not physically knowable.
+  The software tracks a logical index that starts at compartment 1 — align the
+  tray once at power-on. If the motor skips steps, software cannot tell.
+- **One food item per compartment.** The model classifies a whole image; it is
+  not an object detector. Two different fruits in one compartment gets you
+  `multiple_objects` from the quality gate, not two answers.
+- **Percentages are classification confidence**, not a freshness measurement.
+  "Fresh classification: 96% confidence" — never "96% fresh". See
+  [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md).
+- **The model was trained on web photos**, not photos from this rig. Expect it
+  to do worse here than its 99% test score suggests, and use the dashboard's
+  *Teach it your setup* panel to collect real rig photos.
+
+### Developing without hardware
+
+```bash
+./start_freshiq.sh --dev
+```
+
+Simulated motor, sample images instead of a camera, everything else real. The
+whole scan flow, the dashboard and the API work on a laptop with nothing
+plugged in.
+
+Full setup, systemd unit, wiring diagram and the STM32 sketch:
+[`docs/DEPLOY.md`](docs/DEPLOY.md).
+
+---
+
+## Documentation
+
+- [`DEPLOYMENT.md`](DEPLOYMENT.md) — **laptop → UNO Q, copy-paste.** Start here to deploy
+- [`SETUP.md`](SETUP.md) — **start here.** PC → model → real fruit → the board, in order
+- [`docs/DEPLOY.md`](docs/DEPLOY.md) — putting it on the UNO Q, the server, how everything connects
+- [`docs/FROM_SCRATCH.md`](docs/FROM_SCRATCH.md) — the whole system from first principles, with the maths
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — how the pieces fit, data flow
+- [`docs/MODEL.md`](docs/MODEL.md) — model choice, why MobileNet, food-specific logic
+- [`docs/TRAINING.md`](docs/TRAINING.md) — dataset, augmentation, training, evaluation
+- [`docs/API.md`](docs/API.md) — exact input/output contract
+- [`docs/HARDWARE.md`](docs/HARDWARE.md) — what runs on the UNO Q vs. a host, speeds
+- [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md) — honest limits; **read this**
